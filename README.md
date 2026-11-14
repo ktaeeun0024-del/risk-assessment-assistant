@@ -17,17 +17,21 @@
 - AI가 실패하면(키 없음, 요청 한도, 시간 초과 등) 표준모델 검색 초안을 대신 보여 주고 이유를 안내합니다.
 - 위험성은 낮음·보통·높음 색으로 표시하고, CSV(엑셀용)로 내려받을 수 있습니다.
 - **회사별 계정과 기록**
-  - '회사 등록'을 하면 회사가 만들어지고 등록한 사람이 관리자가 됩니다.
-  - 직원 계정은 관리자가 '직원 관리'에서 만듭니다. 임시 비밀번호가 한 번만 보이고, 직원은 처음 로그인할 때 새 비밀번호로 바꿔야 다른 기능을 쓸 수 있습니다. 관리자는 임시 비밀번호 재발급(그 직원의 로그인은 모두 끊김)과 계정 삭제를 할 수 있습니다.
+  - **회사 가입**: 회사 이름·사업자등록번호·이름·이메일·비밀번호를 넣으면 이메일로 6자리 인증번호가 갑니다. 인증하면 회사가 **승인 대기**로 만들어지고 가입한 사람이 회사 관리자가 됩니다. 사업자등록번호는 검증 숫자로 오타를 거르고, 국세청 사업자등록 상태(계속·휴업·폐업)를 조회해 함께 저장합니다.
+  - **사이트 관리자 승인**: `SITE_ADMIN_EMAILS`의 이메일로 로그인하면 '가입 승인' 화면에서 신청 회사의 사업자등록번호·국세청 조회 결과·신청자를 보고 승인·거절합니다. 신청이 들어오면 사이트 관리자에게, 승인·거절하면 신청자에게 메일이 갑니다. 승인 전에는 로그인할 수 없습니다. 사이트 관리자 본인의 이메일로 가입하면 바로 승인됩니다.
+  - **직원 초대**: 회사 관리자가 '직원 관리'에서 직원 이메일을 넣으면 초대 메일(인증번호, 24시간 유효)이 갑니다. 직원은 '초대받았어요'에서 인증번호를 넣고 자기 비밀번호를 정해 가입합니다. 관리자는 초대 다시 보내기·취소, 계정 삭제를 할 수 있습니다.
+  - **비밀번호 찾기**: 로그인 화면의 '비밀번호를 잊었어요'에서 이메일 인증번호로 새 비밀번호를 정합니다(모든 기기 로그인 끊김). 가입 여부는 알려 주지 않습니다.
+  - 인증번호는 DB에 해시로만 저장하고, 다시 보내기는 60초에 한 번·1시간에 5번, 5번 틀리면 그 번호는 못 씁니다.
   - 로그인하면 만든 평가표가 **우리 회사 기록**에 저장되고, 같은 회사 계정끼리만 볼 수 있습니다. 회사는 서버가 로그인 세션으로만 정합니다(요청에 회사 번호를 받지 않음).
   - 로그인 없이도 표준모델 검색 초안은 써 볼 수 있습니다. AI 초안과 기록 저장은 로그인한 계정만 쓸 수 있습니다(무료 AI 하루 사용량 보호).
 - **보안**: 비밀번호는 scrypt로 암호화해 저장, 로그인 상태는 HttpOnly 쿠키(DB에는 토큰의 해시만 저장, 7일), 같은 이메일로 5번 틀리면 10분 잠금, 다른 사이트에서 온 요청(Origin 불일치) 거절. 모든 테이블에 RLS를 켜서 Supabase 공개 API로는 읽을 수 없게 했습니다.
-- 테이블(`companies`, `users`, `sessions`, `assessment_history`)과 RLS 설정은 앱이 처음 DB를 쓸 때 자동으로 만들어집니다. DB에 연결하지 못해도 검색 초안 만들기는 동작하고 로그인 기능만 숨겨집니다.
+- 테이블(`companies`, `users`, `sessions`, `assessment_history`, `email_codes`)과 RLS 설정은 앱이 처음 DB를 쓸 때 자동으로 만들어집니다. DB에 연결하지 못해도 검색 초안 만들기는 동작하고 로그인 기능만 숨겨집니다.
 - API
   - `POST /api/assess` — `{ "description": "...", "mode": "ai" | "search" }` → `{ assessment, report, mode, model, attempts, sources?, fallback?, notice?, saved? }`
   - `GET /api/history` — 우리 회사 기록 최근 20개 (로그인 필요)
-  - `POST /api/auth/register` · `login` · `logout` · `password`, `GET /api/auth/me`
-  - `GET·POST /api/company/members`, `POST /api/company/members/reset` · `remove` (관리자)
+  - `POST /api/auth/register` → `register/verify` (회사 가입), `invite` (초대 수락), `reset` → `reset/verify` (비밀번호 찾기), `login` · `logout` · `password`, `GET /api/auth/me`
+  - `GET·POST /api/company/members` (직원 목록·초대), `POST /api/company/invites` (초대 다시 보내기·취소), `POST /api/company/members/remove` (회사 관리자)
+  - `GET·POST /api/admin/companies` (가입 신청 목록·승인·거절·국세청 다시 조회, 사이트 관리자)
 
 ## 실행 방법
 Node.js 20 이상과 PostgreSQL이 필요합니다.
@@ -51,11 +55,14 @@ npm run build && npm start
 | `DATABASE_URL` | PostgreSQL 접속 주소 (예: `postgresql://사용자:비밀번호@호스트:5432/DB이름`) |
 | `OPENROUTER_MODEL` | (선택) 비워 두면 `openrouter/free`. 검증 측정처럼 결과를 비교할 때 무료 모델 하나를 이름으로 고정 |
 | `AI_TIMEOUT_MS` | (선택) AI 대기 시간(밀리초). 기본 90000. Netlify 무료처럼 서버 실행 시간이 약 10초로 제한된 곳에서는 8000 정도로 두면 시간 안에 검색 초안으로 넘어감 |
+| `SITE_ADMIN_EMAILS` | 회사 가입을 승인하는 사이트 관리자 이메일 (쉼표로 여러 명) |
+| `SMTP_USER` · `SMTP_PASS` | 인증번호 메일을 보낼 Gmail 주소와 Gmail **앱 비밀번호**(Google 계정 → 보안 → 2단계 인증을 켠 뒤 '앱 비밀번호'에서 발급, 16자리). 개발 중에 비워 두면 메일 대신 서버 터미널에 인증번호가 찍힙니다. 배포 환경에서는 꼭 넣어야 가입이 됩니다 |
+| `NTS_SERVICE_KEY` | (선택) 공공데이터포털 '국세청_사업자등록정보 진위확인 및 상태조회 서비스' 일반 인증키(Decoding). 없으면 국세청 조회는 '확인 못 함'으로 저장되고 관리자가 직접 확인합니다 |
 
 ### 배포 (Netlify + Supabase)
 1. Supabase에서 새 프로젝트를 만들고(지역: Northeast Asia (Seoul)) DB 비밀번호를 정해 둡니다.
 2. 프로젝트의 **Connect** → **Transaction pooler** 주소(포트 6543)를 복사하고 `[YOUR-PASSWORD]`를 DB 비밀번호로 바꿉니다. Netlify 서버는 IPv4만 쓰므로 Direct connection 주소 대신 pooler 주소를 씁니다.
-3. Netlify → Site configuration → Environment variables에 `DATABASE_URL`(위 주소), `OPENROUTER_API_KEY`, `AI_TIMEOUT_MS=8000`을 넣고 다시 배포합니다. 테이블은 첫 요청 때 자동으로 만들어집니다.
+3. Netlify → Site configuration → Environment variables에 `DATABASE_URL`(위 주소), `OPENROUTER_API_KEY`, `AI_TIMEOUT_MS=8000`, `SITE_ADMIN_EMAILS`, `SMTP_USER`, `SMTP_PASS`, (선택) `NTS_SERVICE_KEY`를 넣고 다시 배포합니다. 테이블은 첫 요청 때 자동으로 만들어집니다.
 4. Netlify Build settings: Build command `npm run build`, Publish directory `.next`
 
 ## 데이터

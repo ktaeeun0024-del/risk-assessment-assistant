@@ -1,6 +1,7 @@
 // PostgreSQL 접속과 테이블 준비. 서버에서만 쓴다.
 //
-// 테이블: companies(회사) / users(계정, 회사 하나에 속함) / sessions(로그인 상태) / assessment_history(평가표 기록)
+// 테이블: companies(회사, 사이트 관리자 승인 필요) / users(계정, 회사 하나에 속함) / sessions(로그인 상태)
+//        / assessment_history(평가표 기록) / email_codes(이메일 인증번호)
 // 회사별 분리: 평가표 기록은 반드시 로그인한 계정의 company_id로만 저장·조회한다. company_id는 화면에서 받지 않는다.
 // Supabase에서는 모든 테이블에 RLS를 켜 두고 정책을 만들지 않는다. 그러면 Supabase의 공개 REST API(anon 키)로는
 // 아무 행도 읽을 수 없고, 이 앱(테이블 소유자 계정으로 접속)만 읽고 쓸 수 있다.
@@ -48,6 +49,38 @@ const SCHEMA = `
   ALTER TABLE assessment_history ADD COLUMN IF NOT EXISTS company_id integer REFERENCES companies(id) ON DELETE CASCADE;
   ALTER TABLE assessment_history ADD COLUMN IF NOT EXISTS user_id integer REFERENCES users(id) ON DELETE SET NULL;
   CREATE INDEX IF NOT EXISTS history_company_idx ON assessment_history(company_id, created_at DESC);
+
+  -- 회사 가입 승인: 사업자등록번호와 승인 상태. 이 칸이 생기기 전에 만든 회사는 승인된 것으로 둔다.
+  ALTER TABLE companies ADD COLUMN IF NOT EXISTS business_number text;
+  ALTER TABLE companies ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'approved';
+  ALTER TABLE companies ALTER COLUMN status SET DEFAULT 'pending';
+  ALTER TABLE companies ADD COLUMN IF NOT EXISTS nts_check jsonb;
+  ALTER TABLE companies ADD COLUMN IF NOT EXISTS reviewed_at timestamptz;
+  ALTER TABLE companies ADD COLUMN IF NOT EXISTS reviewed_by text;
+  DO $$ BEGIN
+    ALTER TABLE companies ADD CONSTRAINT companies_status_check CHECK (status IN ('pending', 'approved', 'rejected'));
+  EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+  -- 거절된 회사의 번호로는 다시 신청할 수 있게, 대기·승인 상태만 중복을 막는다
+  CREATE UNIQUE INDEX IF NOT EXISTS companies_business_number_idx
+    ON companies(business_number) WHERE business_number IS NOT NULL AND status <> 'rejected';
+
+  -- 이메일 인증번호 (가입·직원 초대·비밀번호 찾기). 번호는 해시만 저장하고, 쓰거나 만료되면 다시 쓸 수 없다.
+  CREATE TABLE IF NOT EXISTS email_codes (
+    id          serial PRIMARY KEY,
+    purpose     text NOT NULL CHECK (purpose IN ('register', 'invite', 'reset')),
+    email       text NOT NULL,
+    code_hash   text NOT NULL,
+    payload     jsonb NOT NULL DEFAULT '{}'::jsonb,
+    company_id  integer REFERENCES companies(id) ON DELETE CASCADE,
+    attempts    integer NOT NULL DEFAULT 0,
+    expires_at  timestamptz NOT NULL,
+    used_at     timestamptz,
+    created_at  timestamptz NOT NULL DEFAULT now()
+  );
+  CREATE INDEX IF NOT EXISTS email_codes_lookup_idx ON email_codes(email, purpose, created_at DESC);
+  CREATE INDEX IF NOT EXISTS email_codes_company_idx ON email_codes(company_id) WHERE company_id IS NOT NULL;
+
+  ALTER TABLE email_codes ENABLE ROW LEVEL SECURITY;
   ALTER TABLE companies ENABLE ROW LEVEL SECURITY;
   ALTER TABLE users ENABLE ROW LEVEL SECURITY;
   ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;

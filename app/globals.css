@@ -672,12 +672,48 @@ button.primary:disabled {
   margin-left: 8px;
 }
 
-code.temp {
-  padding: 2px 6px;
-  font-size: 1rem;
-  letter-spacing: 0.05em;
-  background: var(--surface);
-  border-radius: 4px;
+/* 인증번호 입력: 숫자 6자리를 크게 */
+.code-input {
+  max-width: 12ch;
+  font-size: 1.3rem;
+  letter-spacing: 0.3em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+button.link {
+  align-self: flex-start;
+  padding: 0;
+  font-size: 0.85rem;
+  color: var(--accent);
+  background: none;
+  border: none;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+button.primary.small {
+  padding: 4px 12px;
+  font-size: 0.8rem;
+}
+
+.panel h3 {
+  margin: 16px 0 4px;
+  font-size: 0.9rem;
+}
+
+.ok-text {
+  color: var(--low);
+  font-weight: 600;
+}
+
+.warn-text {
+  color: var(--mid);
+  font-weight: 600;
+}
+
+.row-actions {
+  flex-wrap: wrap;
 }
 
 .members {

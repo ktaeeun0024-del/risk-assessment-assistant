@@ -1,44 +1,64 @@
-// 회사 등록: 회사와 첫 관리자 계정을 함께 만들고 바로 로그인한다.
-// 직원은 스스로 가입하지 않고, 관리자가 '직원 관리'에서 계정을 만든다.
+// 회사 가입 1단계: 입력을 확인하고 이메일로 인증번호를 보낸다.
+// 아직 회사·계정은 만들지 않는다. 입력 내용(비밀번호는 암호화한 값)은 인증번호와 함께 잠시 보관한다.
+// 2단계는 /api/auth/register/verify.
+// 사이트 관리자 이메일(SITE_ADMIN_EMAILS)은 사업자등록번호 없이 이메일 인증만으로 '사이트 운영' 계정을 만든다.
 import { NextResponse } from "next/server";
 import {
   AuthError,
   authErrorResponse,
-  checkPassword,
+  checkNewPassword,
   checkSameOrigin,
   cleanName,
   hashPassword,
+  isSiteAdminEmail,
   normalizeEmail,
   readJson,
-  startSession,
-  userById,
 } from "@/lib/auth";
-import { dbErrorCode, transaction } from "@/lib/db";
+import { normalizeBusinessNumber } from "@/lib/business";
+import { CODE_MINUTES, sendCode } from "@/lib/codes";
+import { db } from "@/lib/db";
+import { siteUrl } from "@/lib/mail";
 
 export async function POST(request: Request) {
   try {
     checkSameOrigin(request);
     const body = await readJson(request);
-    const companyName = cleanName(body.companyName, "회사 이름", 80);
-    const name = cleanName(body.name, "이름");
     const email = normalizeEmail(body.email);
-    const passwordHash = await hashPassword(checkPassword(body.password));
+    const siteAdmin = isSiteAdminEmail(email);
+    const companyName = siteAdmin
+      ? (typeof body.companyName === "string" && body.companyName.trim()) || "사이트 운영"
+      : cleanName(body.companyName, "회사 이름", 80);
+    const rawNumber = typeof body.businessNumber === "string" ? body.businessNumber.trim() : "";
+    const businessNumber = siteAdmin && !rawNumber ? null : normalizeBusinessNumber(rawNumber);
+    const name = cleanName(body.name, "이름");
+    const password = checkNewPassword(body.password, body.passwordConfirm);
 
-    const userId = await transaction(async (client) => {
-      const company = await client.query(`INSERT INTO companies (name) VALUES ($1) RETURNING id`, [companyName]);
-      const user = await client.query(
-        `INSERT INTO users (company_id, email, name, password_hash, role)
-         VALUES ($1, $2, $3, $4, 'admin') RETURNING id`,
-        [company.rows[0].id, email, name, passwordHash],
+    const pool = await db();
+    const taken = await pool.query(`SELECT 1 FROM users WHERE email = $1`, [email]);
+    if (taken.rowCount) throw new AuthError("이미 가입된 이메일이에요. 로그인해 주세요.", 409);
+    const dup = businessNumber
+      ? await pool.query(`SELECT status FROM companies WHERE business_number = $1 AND status <> 'rejected'`, [businessNumber])
+      : { rowCount: 0, rows: [] };
+    if (dup.rowCount) {
+      throw new AuthError(
+        dup.rows[0].status === "pending"
+          ? "이 사업자등록번호로 이미 가입 신청이 들어와 승인을 기다리고 있어요."
+          : "이 사업자등록번호로 이미 가입된 회사가 있어요. 회사 관리자에게 직원 초대를 요청해 주세요.",
+        409,
       );
-      return user.rows[0].id as number;
-    }).catch((err) => {
-      if (dbErrorCode(err) === "23505") throw new AuthError("이미 가입된 이메일이에요. 로그인해 주세요.", 409);
-      throw err;
-    });
+    }
 
-    await startSession(userId, request);
-    return NextResponse.json({ user: await userById(userId) });
+    await sendCode({
+      purpose: "register",
+      email,
+      payload: { companyName, businessNumber, name, passwordHash: await hashPassword(password) },
+      subject: "회사 가입 인증번호",
+      intro: siteAdmin
+        ? `${name}님, 사이트 관리자 계정을 만들기 위한 이메일 인증번호예요.`
+        : `${name}님, '${companyName}' 회사 가입을 위한 이메일 인증번호예요.`,
+      link: siteUrl(request),
+    });
+    return NextResponse.json({ ok: true, email, minutes: CODE_MINUTES.register });
   } catch (err) {
     return authErrorResponse(err, "register");
   }

@@ -12,11 +12,11 @@ import {
 } from "@/lib/options";
 import { riskLevel, type Assessment, type RiskLevel, type ValidationReport } from "@/lib/schema";
 import type { HistoryItem } from "@/lib/history";
-import { AuthPanel, MembersPanel, PasswordPanel, postJson, ROLE_NAMES, type Me } from "./account";
+import { AuthPanel, MembersPanel, PasswordPanel, postJson, ROLE_NAMES, SiteAdminPanel, type Me } from "./account";
 
 const LEVEL_CLASS: Record<RiskLevel, string> = { 높음: "high", 보통: "mid", 낮음: "low" };
 
-type Panel = "login" | "register" | "password" | "members" | null;
+type Panel = "login" | "register" | "password" | "members" | "siteadmin" | null;
 
 export default function Home() {
   const [me, setMe] = useState<Me | null>(null);
@@ -140,6 +140,11 @@ export default function Home() {
                   직원 관리
                 </button>
               )}
+              {me.isSiteAdmin && !me.mustChangePassword && (
+                <button type="button" className="ghost small" onClick={() => setPanel(panel === "siteadmin" ? null : "siteadmin")}>
+                  가입 승인
+                </button>
+              )}
               <button type="button" className="ghost small" onClick={logout}>
                 로그아웃
               </button>
@@ -150,7 +155,7 @@ export default function Home() {
                 로그인
               </button>
               <button type="button" className="ghost small" onClick={() => setPanel(panel === "register" ? null : "register")}>
-                회사 등록
+                회사 가입
               </button>
             </>
           ) : (
@@ -164,6 +169,7 @@ export default function Home() {
         <PasswordPanel forced={me.mustChangePassword} onDone={(user) => signedIn(user)} />
       )}
       {me && panel === "members" && me.role === "admin" && <MembersPanel me={me} />}
+      {me && panel === "siteadmin" && me.isSiteAdmin && <SiteAdminPanel />}
 
       <form className="form" onSubmit={handleSubmit}>
         <div className="options">

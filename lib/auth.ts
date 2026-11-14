@@ -4,7 +4,8 @@
 // - 로그인하면 임의의 토큰을 HttpOnly 쿠키로 주고, DB에는 토큰의 SHA-256 값만 저장한다.
 //   DB가 유출돼도 쿠키를 만들어 낼 수 없다.
 // - 같은 이메일로 5번 연속 틀리면 10분 동안 잠근다.
-import { createHash, randomBytes, randomInt, scrypt as scryptCb, timingSafeEqual } from "node:crypto";
+// - 회사는 사이트 관리자(환경변수 SITE_ADMIN_EMAILS)가 승인해야 로그인할 수 있다.
+import { createHash, randomBytes, scrypt as scryptCb, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
@@ -30,7 +31,18 @@ export type SessionUser = {
   companyId: number;
   companyName: string;
   mustChangePassword: boolean;
+  isSiteAdmin: boolean;
 };
+
+// 사이트 관리자: 회사 가입을 승인하는 사람. 쉼표로 여러 명을 적을 수 있다.
+export function siteAdminEmails(): string[] {
+  return (process.env.SITE_ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+export const isSiteAdminEmail = (email: string) => siteAdminEmails().includes(email.toLowerCase());
 
 // 사람이 읽을 메시지와 HTTP 상태를 함께 담는 오류
 export class AuthError extends Error {
@@ -96,17 +108,13 @@ export async function verifyPassword(password: string, stored: string): Promise<
   return actual.length === expected.length && timingSafeEqual(actual, expected);
 }
 
-// 헷갈리는 글자(0/O, 1/l/I)를 뺀 10자리 임시 비밀번호
-export function tempPassword(): string {
-  const chars = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  return Array.from({ length: 10 }, () => chars[randomInt(chars.length)]).join("");
-}
-
 // 로그인 실패 처리. 성공하면 계정을, 실패하면 AuthError를 던진다. 이메일이 있는지 없는지 알려 주지 않는다.
 export async function checkLogin(email: string, password: string): Promise<{ id: number }> {
   const pool = await db();
   const { rows } = await pool.query(
-    `SELECT id, password_hash, failed_logins, locked_until FROM users WHERE email = $1`,
+    `SELECT u.id, u.password_hash, u.failed_logins, u.locked_until, c.status AS company_status
+       FROM users u JOIN companies c ON c.id = u.company_id
+      WHERE u.email = $1`,
     [email],
   );
   const user = rows[0];
@@ -128,6 +136,13 @@ export async function checkLogin(email: string, password: string): Promise<{ id:
     throw wrong;
   }
   await pool.query(`UPDATE users SET failed_logins = 0, locked_until = NULL WHERE id = $1`, [user.id]);
+  // 비밀번호가 맞은 뒤에만 승인 상태를 알려 준다 (다른 사람이 가입 여부를 알아내지 못하게)
+  if (user.company_status === "pending") {
+    throw new AuthError("회사 가입 승인을 기다리고 있어요. 승인되면 메일로 알려 드려요.", 403, "COMPANY_PENDING");
+  }
+  if (user.company_status !== "approved") {
+    throw new AuthError("회사 가입이 승인되지 않았어요. 사이트 관리자에게 문의해 주세요.", 403, "COMPANY_REJECTED");
+  }
   return { id: user.id };
 }
 
@@ -170,7 +185,10 @@ export async function endSession(): Promise<void> {
 const USER_COLUMNS = `u.id, u.email, u.name, u.role, u.company_id AS "companyId", c.name AS "companyName",
             u.must_change_password AS "mustChangePassword"`;
 
-// 쿠키로 로그인한 계정을 찾는다. 없거나 만료됐으면 null.
+const withFlags = (row: Omit<SessionUser, "isSiteAdmin"> | undefined): SessionUser | null =>
+  row ? { ...row, isSiteAdmin: isSiteAdminEmail(row.email) } : null;
+
+// 쿠키로 로그인한 계정을 찾는다. 없거나 만료됐거나 회사 승인이 취소됐으면 null.
 export async function currentUser(): Promise<SessionUser | null> {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) return null;
@@ -179,10 +197,10 @@ export async function currentUser(): Promise<SessionUser | null> {
        FROM sessions s
        JOIN users u ON u.id = s.user_id
        JOIN companies c ON c.id = u.company_id
-      WHERE s.token_hash = $1 AND s.expires_at > now()`,
+      WHERE s.token_hash = $1 AND s.expires_at > now() AND c.status = 'approved'`,
     [sha256(token)],
   );
-  return rows[0] ?? null;
+  return withFlags(rows[0]);
 }
 
 // 로그인·가입 직후처럼 쿠키를 막 심은 요청에서 계정 정보를 돌려줄 때 쓴다
@@ -191,7 +209,7 @@ export async function userById(id: number): Promise<SessionUser> {
     `SELECT ${USER_COLUMNS} FROM users u JOIN companies c ON c.id = u.company_id WHERE u.id = $1`,
     [id],
   );
-  return rows[0];
+  return withFlags(rows[0]) as SessionUser;
 }
 
 // 로그인 필수. 임시 비밀번호를 아직 안 바꿨으면 다른 기능을 막는다.
@@ -208,6 +226,18 @@ export async function requireAdmin(): Promise<SessionUser> {
   const user = await requireUser();
   if (user.role !== "admin") throw new AuthError("회사 관리자만 할 수 있어요.", 403);
   return user;
+}
+
+export async function requireSiteAdmin(): Promise<SessionUser> {
+  const user = await requireUser();
+  if (!user.isSiteAdmin) throw new AuthError("사이트 관리자만 할 수 있어요.", 403);
+  return user;
+}
+
+export function checkNewPassword(password: unknown, confirm?: unknown): string {
+  const pw = checkPassword(password);
+  if (confirm !== undefined && confirm !== pw) throw new AuthError("비밀번호 두 칸이 서로 달라요.", 400);
+  return pw;
 }
 
 // 다른 사이트가 사용자 몰래 요청을 보내는 것(CSRF)을 막는다. 브라우저가 붙이는 Origin이 이 사이트와 다르면 거절.
