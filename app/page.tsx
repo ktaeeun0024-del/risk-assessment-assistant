@@ -33,10 +33,13 @@ export default function Home() {
   const [historyError, setHistoryError] = useState("");
   // 위험성 매트릭스에서 고른 칸 (지금/대책 후 중 어느 쪽의 어느 칸인지). 평가표를 그 칸 항목만 거른다.
   const [cell, setCell] = useState<Cell>(null);
+  // 평가표가 나오면 입력칸은 접어 두고, '작업 설명 고치기'를 누를 때만 펼친다
+  const [editing, setEditing] = useState(false);
 
   function showResult(next: AssessResponse | null) {
     setResult(next);
     setCell(null);
+    setEditing(false);
   }
 
   function selectCell(c: Cell) {
@@ -284,8 +287,19 @@ export default function Home() {
                 <h1 className="band-headline">{summary.headline}</h1>
                 <p className="band-detail">{summary.detail}</p>
                 <p className="band-hint">매트릭스 칸을 누르면 그 칸의 항목만 아래 평가표에 남아요.</p>
+                {editing ? (
+                  form
+                ) : (
+                  <div className="desc-bar">
+                    <p className="desc-text" title={description}>
+                      {description}
+                    </p>
+                    <button type="button" className="ghost small" onClick={() => setEditing(true)}>
+                      작업 설명 고치기
+                    </button>
+                  </div>
+                )}
               </div>
-              <div className="band-form">{form}</div>
             </>
           ) : (
             <>
@@ -384,30 +398,12 @@ function ResultView({ result, me, cell, onClear }: { result: AssessResponse; me:
 
   return (
     <section className="result" aria-labelledby="doc-title">
-      <div className="doc-toolbar">
+      {(result.notice || result.saved) && (
         <div className="doc-notes">
           {result.notice && <p className="notice">{result.notice}</p>}
           {result.saved && <p className="ok">우리 회사 기록에 저장했어요.</p>}
         </div>
-        <div className="row-actions">
-          <button type="button" className="ghost" onClick={() => downloadCsv(assessment)}>
-            <DownloadIcon size={16} />
-            CSV 내려받기
-          </button>
-          <button
-            type="button"
-            className="primary"
-            onClick={() => {
-              // 칸을 골라 거른 상태여도 인쇄는 전체 평가표로
-              onClear();
-              setTimeout(() => window.print(), 50);
-            }}
-          >
-            <PrinterIcon size={16} />
-            인쇄하기
-          </button>
-        </div>
-      </div>
+      )}
 
       <article className="paper">
         <header className="doc-head">
@@ -415,9 +411,29 @@ function ResultView({ result, me, cell, onClear }: { result: AssessResponse; me:
             <h2 id="doc-title">위험성평가표</h2>
             <p className="doc-basis">사업장 위험성평가에 관한 지침(고용노동부 고시 제2023-19호) 빈도·강도법 3×3</p>
           </div>
-          <div className={`stamp ${report.ok ? "pass" : "fail"}`} role="img" aria-label={`코드 검사 ${report.ok ? "통과" : "불통과"}`}>
-            <span className="stamp-label">코드 검사</span>
-            <span className="stamp-value">{report.ok ? "통과" : "불통과"}</span>
+          <div className="doc-side">
+            <div className="row-actions doc-actions">
+              <button type="button" className="ghost" onClick={() => downloadCsv(assessment)}>
+                <DownloadIcon size={16} />
+                CSV 내려받기
+              </button>
+              <button
+                type="button"
+                className="primary"
+                onClick={() => {
+                  // 칸을 골라 거른 상태여도 인쇄는 전체 평가표로
+                  onClear();
+                  setTimeout(() => window.print(), 50);
+                }}
+              >
+                <PrinterIcon size={16} />
+                인쇄하기
+              </button>
+            </div>
+            <div className={`stamp ${report.ok ? "pass" : "fail"}`} role="img" aria-label={`코드 검사 ${report.ok ? "통과" : "불통과"}`}>
+              <span className="stamp-label">코드 검사</span>
+              <span className="stamp-value">{report.ok ? "통과" : "불통과"}</span>
+            </div>
           </div>
         </header>
 
