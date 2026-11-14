@@ -18,7 +18,9 @@ const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 // 기본은 무료 모델 중 하나를 골라 쓰는 openrouter/free. 검증 측정처럼 결과를 비교해야 할 때는
 // OPENROUTER_MODEL에 무료 모델 하나를 이름으로 고정한다 (예: 모델ID:free)
 const MODEL = process.env.OPENROUTER_MODEL?.trim() || "openrouter/free";
-const TIMEOUT_MS = 90_000;
+// 배포 사이트의 서버 실행 시간 제한(Netlify 무료는 약 10초)보다 짧게 AI_TIMEOUT_MS를 주면
+// 시간 안에 AI를 포기하고 검색 초안으로 넘어간다. 기본 90초.
+const TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS) > 0 ? Number(process.env.AI_TIMEOUT_MS) : 90_000;
 export const PROMPT_VERSION = "draft-v1-openrouter";
 
 const SYSTEM_PROMPT = `너는 50인 미만 제조 사업장의 위험성평가를 돕는 산업안전 전문가야.

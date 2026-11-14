@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { aiDraft, DraftError } from "@/lib/ai";
-import { dbErrorCode, saveHistory } from "@/lib/db";
+import { AuthError, authErrorResponse, checkSameOrigin, currentUser, type SessionUser } from "@/lib/auth";
+import { dbErrorCode } from "@/lib/db";
+import { saveHistory } from "@/lib/history";
 import {
   DEFAULT_MODE,
   isMode,
@@ -19,8 +21,10 @@ const SEARCH_MODEL = "표준모델 검색 (BM25)";
 export async function POST(request: Request) {
   let body: unknown;
   try {
+    checkSameOrigin(request);
     body = await request.json();
-  } catch {
+  } catch (err) {
+    if (err instanceof AuthError) return authErrorResponse(err, "assess");
     return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
   }
   const input = (typeof body === "object" && body !== null ? body : {}) as {
@@ -41,6 +45,27 @@ export async function POST(request: Request) {
   }
   if (!isMode(mode)) {
     return NextResponse.json({ error: "만드는 방식을 다시 골라 주세요." }, { status: 400 });
+  }
+
+  // 로그인 확인. DB에 연결하지 못해도 검색 초안은 만들 수 있게 한다.
+  let user: SessionUser | null = null;
+  try {
+    user = await currentUser();
+  } catch (err) {
+    console.error(`[assess] 로그인 확인 실패: ${dbErrorCode(err)}`);
+  }
+  if (user?.mustChangePassword) {
+    return authErrorResponse(
+      new AuthError("임시 비밀번호를 먼저 새 비밀번호로 바꿔 주세요.", 403, "PASSWORD_CHANGE_REQUIRED"),
+      "assess",
+    );
+  }
+  // 무료 AI는 하루 사용량이 정해져 있어서 로그인한 회사 계정만 쓴다. 검색 초안은 누구나 써 볼 수 있다.
+  if (mode === "ai" && !user) {
+    return NextResponse.json(
+      { error: "AI 초안은 로그인한 회사 계정만 쓸 수 있어요. 로그인 없이 '표준모델 검색'은 써 볼 수 있어요.", code: "LOGIN_REQUIRED" },
+      { status: 401 },
+    );
   }
 
   // 검색 초안은 두 모드 모두에서 쓴다 (AI 모드에서는 참고 자료, AI가 실패하면 대신 보여 줄 초안)
@@ -82,18 +107,21 @@ export async function POST(request: Request) {
     }
   }
 
-  // 기록 저장에 실패해도 평가표는 그대로 돌려준다.
-  try {
-    await saveHistory({
-      description,
-      mode: result.mode,
-      model: result.model,
-      assessment: result.assessment,
-      report: result.report,
-    });
-  } catch (err) {
-    console.error(`[assess] 기록 저장 실패: ${dbErrorCode(err)}`);
-    result.notice = [result.notice, "평가표를 기록에 저장하지 못했어요."].filter(Boolean).join(" ");
+  // 로그인한 경우에만 우리 회사 기록에 저장한다. 저장에 실패해도 평가표는 그대로 돌려준다.
+  if (user) {
+    try {
+      await saveHistory(user.companyId, user.id, {
+        description,
+        mode: result.mode,
+        model: result.model,
+        assessment: result.assessment,
+        report: result.report,
+      });
+      result.saved = true;
+    } catch (err) {
+      console.error(`[assess] 기록 저장 실패: ${dbErrorCode(err)}`);
+      result.notice = [result.notice, "평가표를 회사 기록에 저장하지 못했어요."].filter(Boolean).join(" ");
+    }
   }
   return NextResponse.json(result);
 }

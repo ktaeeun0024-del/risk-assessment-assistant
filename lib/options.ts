@@ -42,4 +42,6 @@ export type AssessResponse = {
   fallback?: boolean;
   // 기록 저장 실패 등 안내 문구
   notice?: string;
+  // 로그인한 회사 기록에 저장됐는지
+  saved?: boolean;
 };

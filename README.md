@@ -16,8 +16,18 @@
 - AI 답이 JSON 형식에 맞지 않으면 한 번 다시 요청하고, 검사 오류가 있으면 오류 목록을 보내 한 번 고쳐 쓰게 합니다.
 - AI가 실패하면(키 없음, 요청 한도, 시간 초과 등) 표준모델 검색 초안을 대신 보여 주고 이유를 안내합니다.
 - 위험성은 낮음·보통·높음 색으로 표시하고, CSV(엑셀용)로 내려받을 수 있습니다.
-- 만든 평가표를 PostgreSQL에 저장하고, 아래에 최근 5개를 보여 줍니다. '다시 보기'로 다시 열 수 있습니다. 테이블(`assessment_history`)은 처음 쓸 때 자동으로 만들어집니다. DB에 연결하지 못해도 평가표 만들기는 그대로 동작합니다.
-- API: `POST /api/assess` — `{ "description": "...", "mode": "ai" | "search" }` → `{ assessment, report, mode, model, attempts, sources?, fallback?, notice? }`. `GET /api/history`는 최근 기록 5개를 돌려줍니다.
+- **회사별 계정과 기록**
+  - '회사 등록'을 하면 회사가 만들어지고 등록한 사람이 관리자가 됩니다.
+  - 직원 계정은 관리자가 '직원 관리'에서 만듭니다. 임시 비밀번호가 한 번만 보이고, 직원은 처음 로그인할 때 새 비밀번호로 바꿔야 다른 기능을 쓸 수 있습니다. 관리자는 임시 비밀번호 재발급(그 직원의 로그인은 모두 끊김)과 계정 삭제를 할 수 있습니다.
+  - 로그인하면 만든 평가표가 **우리 회사 기록**에 저장되고, 같은 회사 계정끼리만 볼 수 있습니다. 회사는 서버가 로그인 세션으로만 정합니다(요청에 회사 번호를 받지 않음).
+  - 로그인 없이도 표준모델 검색 초안은 써 볼 수 있습니다. AI 초안과 기록 저장은 로그인한 계정만 쓸 수 있습니다(무료 AI 하루 사용량 보호).
+- **보안**: 비밀번호는 scrypt로 암호화해 저장, 로그인 상태는 HttpOnly 쿠키(DB에는 토큰의 해시만 저장, 7일), 같은 이메일로 5번 틀리면 10분 잠금, 다른 사이트에서 온 요청(Origin 불일치) 거절. 모든 테이블에 RLS를 켜서 Supabase 공개 API로는 읽을 수 없게 했습니다.
+- 테이블(`companies`, `users`, `sessions`, `assessment_history`)과 RLS 설정은 앱이 처음 DB를 쓸 때 자동으로 만들어집니다. DB에 연결하지 못해도 검색 초안 만들기는 동작하고 로그인 기능만 숨겨집니다.
+- API
+  - `POST /api/assess` — `{ "description": "...", "mode": "ai" | "search" }` → `{ assessment, report, mode, model, attempts, sources?, fallback?, notice?, saved? }`
+  - `GET /api/history` — 우리 회사 기록 최근 20개 (로그인 필요)
+  - `POST /api/auth/register` · `login` · `logout` · `password`, `GET /api/auth/me`
+  - `GET·POST /api/company/members`, `POST /api/company/members/reset` · `remove` (관리자)
 
 ## 실행 방법
 Node.js 20 이상과 PostgreSQL이 필요합니다.
@@ -40,6 +50,13 @@ npm run build && npm start
 | `OPENROUTER_API_KEY` | OpenRouter API 키 (https://openrouter.ai/settings/keys 에서 발급). 없으면 표준모델 검색 초안만 나옵니다 |
 | `DATABASE_URL` | PostgreSQL 접속 주소 (예: `postgresql://사용자:비밀번호@호스트:5432/DB이름`) |
 | `OPENROUTER_MODEL` | (선택) 비워 두면 `openrouter/free`. 검증 측정처럼 결과를 비교할 때 무료 모델 하나를 이름으로 고정 |
+| `AI_TIMEOUT_MS` | (선택) AI 대기 시간(밀리초). 기본 90000. Netlify 무료처럼 서버 실행 시간이 약 10초로 제한된 곳에서는 8000 정도로 두면 시간 안에 검색 초안으로 넘어감 |
+
+### 배포 (Netlify + Supabase)
+1. Supabase에서 새 프로젝트를 만들고(지역: Northeast Asia (Seoul)) DB 비밀번호를 정해 둡니다.
+2. 프로젝트의 **Connect** → **Transaction pooler** 주소(포트 6543)를 복사하고 `[YOUR-PASSWORD]`를 DB 비밀번호로 바꿉니다. Netlify 서버는 IPv4만 쓰므로 Direct connection 주소 대신 pooler 주소를 씁니다.
+3. Netlify → Site configuration → Environment variables에 `DATABASE_URL`(위 주소), `OPENROUTER_API_KEY`, `AI_TIMEOUT_MS=8000`을 넣고 다시 배포합니다. 테이블은 첫 요청 때 자동으로 만들어집니다.
+4. Netlify Build settings: Build command `npm run build`, Publish directory `.next`
 
 ## 데이터
 - **한국가스공사 위험성평가 표준모델** (공공데이터포털 15156225, 이용허락범위 제한 없음): KRAS 양식 엑셀 80개 → `data/standard_models.csv` (유해·위험요인 3,712행, 작업 61종, 법 조항 148종) → 웹 앱용 `data/standard_models.json` (분류가 정리된 3,630행)
