@@ -21,6 +21,8 @@ src/build_dataset.py       엑셀 80개 → data/standard_models.csv
 src/schema.py              평가표 형식(JSON 스키마), KRAS 6분류, 3x3 위험성 등급, 법 조항 추출
 src/validator.py           평가표 검사기
 src/ai_config.py           Claude 모델 선택(AI_MODE), API 키, 사용 금액 기록
+src/retrieve_draft.py      API 없는 초안: 작업 설명 → 표준모델 검색(BM25) → 평가표 → 검사기 (비용 0원)
+src/draft.py               AI ①: 작업 설명 → 평가표 초안(구조화 출력) → 검사기 → 오류 있으면 1회 재작성
 ```
 
 ## 실행
@@ -29,6 +31,9 @@ pip install -r requirements.txt
 python scripts/download_data.py
 python -m src.build_dataset
 python -m src.validator          # 검사기 동작 확인
+python -m src.retrieve_draft --example   # API 없이 표준모델 검색으로 초안 생성 (비용 0원)
+python -m src.draft --ping       # API 키·연결 확인
+python -m src.draft --example    # 예시 작업으로 평가표 초안 생성 (logs/drafts/에 저장)
 ```
 Claude API 키: `cp .streamlit/secrets.toml.example .streamlit/secrets.toml` 후 키 입력 (GitHub에 올라가지 않음)
 
