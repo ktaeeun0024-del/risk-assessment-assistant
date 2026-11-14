@@ -13,6 +13,8 @@ import {
 import { riskLevel, type Assessment, type RiskLevel, type ValidationReport } from "@/lib/schema";
 import type { HistoryItem } from "@/lib/history";
 import { AuthPanel, MembersPanel, PasswordPanel, postJson, ROLE_NAMES, SiteAdminPanel, type Me } from "./account";
+import { AlertIcon, CheckCircleIcon, DownloadIcon, InfoIcon, LockIcon, PrinterIcon, SearchIcon, SparkIcon } from "./icons";
+import { cellOf, MatrixGrid, MatrixLegend, summarize, type Cell } from "./matrix";
 
 const LEVEL_CLASS: Record<RiskLevel, string> = { 높음: "high", 보통: "mid", 낮음: "low" };
 
@@ -29,6 +31,18 @@ export default function Home() {
   const [error, setError] = useState("");
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [historyError, setHistoryError] = useState("");
+  // 위험성 매트릭스에서 고른 칸 (지금/대책 후 중 어느 쪽의 어느 칸인지). 평가표를 그 칸 항목만 거른다.
+  const [cell, setCell] = useState<Cell>(null);
+
+  function showResult(next: AssessResponse | null) {
+    setResult(next);
+    setCell(null);
+  }
+
+  function selectCell(c: Cell) {
+    setCell(c);
+    if (c) document.getElementById("doc-title")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 
   // 로그인하지 않았거나 임시 비밀번호 상태면 AI 초안은 쓸 수 없다
   const canUseAi = !!me && !me.mustChangePassword;
@@ -70,14 +84,14 @@ export default function Home() {
     setMe(null);
     setPanel(null);
     setHistory([]);
-    setResult(null);
+    showResult(null);
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError("");
-    setResult(null);
+    showResult(null);
     try {
       const res = await fetch("/api/assess", {
         method: "POST",
@@ -88,7 +102,7 @@ export default function Home() {
       if (!res.ok || !data) {
         throw new Error(data?.error ?? "서버와 연결이 원활하지 않아요. 잠시 후 다시 시도해 주세요.");
       }
-      setResult(data);
+      showResult(data);
       if (me) loadHistory();
     } catch (err) {
       setError(
@@ -105,7 +119,7 @@ export default function Home() {
 
   function showHistory(item: HistoryItem) {
     setDescription(item.description);
-    setResult({
+    showResult({
       assessment: item.assessment,
       report: item.report,
       mode: item.mode,
@@ -117,108 +131,64 @@ export default function Home() {
 
   const length = description.trim().length;
 
-  return (
-    <main className="container">
-      <header className="topbar">
-        <div>
-          <h1>위험성평가 도우미</h1>
-          <p className="subtitle">
-            작업 내용을 말로 설명하면 위험성평가표 초안을 만들어 드려요. 만든 초안은 코드가 한 번 더 검사해요.
-          </p>
-        </div>
-        <nav className="account">
-          {me ? (
-            <>
-              <span className="who">
-                {me.companyName} · {me.name} <span className="tag">{ROLE_NAMES[me.role]}</span>
-              </span>
-              <button type="button" className="ghost small" onClick={() => setPanel(panel === "password" ? null : "password")}>
-                비밀번호 변경
-              </button>
-              {me.role === "admin" && !me.mustChangePassword && (
-                <button type="button" className="ghost small" onClick={() => setPanel(panel === "members" ? null : "members")}>
-                  직원 관리
-                </button>
-              )}
-              {me.isSiteAdmin && !me.mustChangePassword && (
-                <button type="button" className="ghost small" onClick={() => setPanel(panel === "siteadmin" ? null : "siteadmin")}>
-                  가입 승인
-                </button>
-              )}
-              <button type="button" className="ghost small" onClick={logout}>
-                로그아웃
-              </button>
-            </>
-          ) : dbAvailable ? (
-            <>
-              <button type="button" className="ghost small" onClick={() => setPanel(panel === "login" ? null : "login")}>
-                로그인
-              </button>
-              <button type="button" className="ghost small" onClick={() => setPanel(panel === "register" ? null : "register")}>
-                회사 가입
-              </button>
-            </>
-          ) : (
-            <span className="hint">지금은 로그인 기능을 쓸 수 없어요 (DB 연결 안 됨)</span>
-          )}
-        </nav>
-      </header>
-
-      {!me && (panel === "login" || panel === "register") && <AuthPanel initial={panel} onDone={signedIn} />}
-      {me && panel === "password" && (
-        <PasswordPanel forced={me.mustChangePassword} onDone={(user) => signedIn(user)} />
-      )}
-      {me && panel === "members" && me.role === "admin" && <MembersPanel me={me} />}
-      {me && panel === "siteadmin" && me.isSiteAdmin && <SiteAdminPanel />}
-
-      <form className="form" onSubmit={handleSubmit}>
-        <div className="options">
-          <fieldset className="option-group">
-            <legend>만드는 방식</legend>
-            {(Object.keys(MODES) as Mode[]).map((key) => {
-              const locked = key === "ai" && !canUseAi;
-              return (
-                <label
-                  key={key}
-                  className={[key === effectiveMode ? "selected" : "", locked ? "locked" : ""].join(" ").trim() || undefined}
-                  title={locked ? "로그인한 회사 계정만 쓸 수 있어요" : undefined}
-                >
-                  <input
-                    type="radio"
-                    name="mode"
-                    value={key}
-                    checked={key === effectiveMode}
-                    disabled={locked}
-                    onChange={() => setMode(key)}
-                  />
-                  {MODES[key]}
-                  {locked && " 🔒"}
-                </label>
-              );
-            })}
-          </fieldset>
-          <button type="button" className="ghost" onClick={() => setDescription(EXAMPLE)}>
-            예시 넣기
-          </button>
-        </div>
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="예: 지게차로 철판 코일을 옮기고, 80톤 프레스로 브래킷을 찍습니다. 방호장치는 1대에만 있고, 소음이 커서 귀마개를 나눠주지만 잘 안 씁니다."
-          maxLength={MAX_LENGTH}
-          rows={6}
-          aria-label="작업 설명"
-        />
-        <div className="form-footer">
-          <span className="counter">
-            {length} / {MAX_LENGTH}자 · 무엇을, 어떤 기계·물질로, 몇 명이, 지금 어떤 안전조치를 하는지 적어 주세요
-          </span>
-          <button type="submit" disabled={loading || length < MIN_LENGTH}>
-            {loading ? "만드는 중…" : "평가표 만들기"}
-          </button>
-        </div>
-      </form>
-
+  const form = (
+    <form className="form card" onSubmit={handleSubmit}>
+      <div className="form-head">
+        <label htmlFor="description" className="form-title">
+          {result ? "작업 설명 고치기" : "작업 설명"}
+        </label>
+        <button type="button" className="ghost small" onClick={() => setDescription(EXAMPLE)}>
+          예시 넣기
+        </button>
+      </div>
+      <div className="options">
+        <fieldset className="option-group">
+          <legend>만드는 방식</legend>
+          {(Object.keys(MODES) as Mode[]).map((key) => {
+            const locked = key === "ai" && !canUseAi;
+            return (
+              <label
+                key={key}
+                className={[key === effectiveMode ? "selected" : "", locked ? "locked" : ""].join(" ").trim() || undefined}
+                title={locked ? "로그인한 회사 계정만 쓸 수 있어요" : undefined}
+              >
+                <input
+                  type="radio"
+                  name="mode"
+                  value={key}
+                  checked={key === effectiveMode}
+                  disabled={locked}
+                  onChange={() => setMode(key)}
+                />
+                {key === "ai" ? <SparkIcon size={15} /> : <SearchIcon size={15} />}
+                {MODES[key]}
+                {locked && <LockIcon size={14} className="lock" />}
+              </label>
+            );
+          })}
+        </fieldset>
+      </div>
+      <textarea
+        id="description"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        placeholder="예: 지게차로 철판 코일을 옮기고, 80톤 프레스로 브래킷을 찍습니다. 방호장치는 1대에만 있고, 소음이 커서 귀마개를 나눠주지만 잘 안 씁니다."
+        maxLength={MAX_LENGTH}
+        rows={result ? 3 : 5}
+        aria-describedby="description-help"
+      />
+      <div className="form-footer">
+        <span className="counter" id="description-help">
+          <strong>
+            {length} / {MAX_LENGTH}자
+          </strong>{" "}
+          무엇을, 어떤 기계·물질로, 몇 명이, 지금 어떤 안전조치를 하는지 적어 주세요
+        </span>
+        <button type="submit" className="primary" disabled={loading || length < MIN_LENGTH} aria-busy={loading}>
+          {loading && <span className="spinner" aria-hidden="true" />}
+          {loading ? "만드는 중…" : result ? "다시 만들기" : "평가표 만들기"}
+        </button>
+      </div>
       {!canUseAi && (
         <p className="hint">
           {me
@@ -226,154 +196,350 @@ export default function Home() {
             : "로그인하지 않아도 표준모델 검색 초안은 만들 수 있어요. AI 초안과 회사 기록 저장은 로그인한 회사 계정만 쓸 수 있어요."}
         </p>
       )}
-      {loading && effectiveMode === "ai" && (
-        <p className="placeholder">무료 AI 모델이라 30초~1분쯤 걸릴 수 있어요.</p>
+      {loading && effectiveMode === "ai" && <p className="hint">무료 AI 모델이라 30초~1분쯤 걸릴 수 있어요.</p>}
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
       )}
-      {error && <p className="error">{error}</p>}
+    </form>
+  );
 
-      {result && <ResultView result={result} />}
+  const summary = result ? summarize(result.assessment.항목) : null;
 
-      {me && !me.mustChangePassword && (
-      <section className="history">
-        <h2>우리 회사 평가표 · {me.companyName}</h2>
-        <p className="hint">같은 회사 계정끼리만 보여요. 위험성평가 결과는 기록해 두고 보존해야 하니 CSV로도 내려받아 두세요.</p>
-        {historyError ? (
-          <p className="placeholder">{historyError}</p>
-        ) : history.length === 0 ? (
-          <p className="placeholder">아직 만든 평가표가 없어요.</p>
-        ) : (
-          <ol>
-            {history.map((item) => (
-              <li key={item.id}>
-                <div className="history-row">
-                  <div>
-                    <p className="history-input">{item.title}</p>
-                    <p className="history-meta">
-                      {item.author} · {MODES[item.mode] ?? item.mode} · {item.itemCount}개 항목 · 검사{" "}
-                      {item.passed ? "통과" : "불통과"} · {new Date(item.createdAt).toLocaleString("ko-KR")}
-                    </p>
-                  </div>
-                  <button type="button" className="ghost" onClick={() => showHistory(item)}>
-                    다시 보기
+  return (
+    <>
+      <header className="app-header">
+        <div className="app-header-inner">
+          <a className="brand" href="/">
+            <svg className="brand-mark" viewBox="0 0 32 28" aria-hidden="true" focusable="false">
+              <path d="M16 1.5 31 26.5H1z" />
+              <path className="brand-mark-ink" d="M14.6 9.5h2.8l-.5 9.2h-1.8zM16 20.6a1.6 1.6 0 1 1 0 3.2 1.6 1.6 0 0 1 0-3.2z" />
+            </svg>
+            위험성평가 도우미
+          </a>
+          <nav className="account" aria-label="계정">
+            {me ? (
+              <>
+                <span className="who">
+                  {me.companyName}
+                  <span className="who-sep" aria-hidden="true" />
+                  {me.name} <span className="tag">{ROLE_NAMES[me.role]}</span>
+                </span>
+                <button type="button" className="ghost small" onClick={() => setPanel(panel === "password" ? null : "password")}>
+                  비밀번호 변경
+                </button>
+                {me.role === "admin" && !me.mustChangePassword && (
+                  <button type="button" className="ghost small" onClick={() => setPanel(panel === "members" ? null : "members")}>
+                    직원 관리
                   </button>
-                </div>
-                <p className="history-desc">{item.description}</p>
-              </li>
-            ))}
-          </ol>
-        )}
-      </section>
+                )}
+                {me.isSiteAdmin && !me.mustChangePassword && (
+                  <button type="button" className="ghost small" onClick={() => setPanel(panel === "siteadmin" ? null : "siteadmin")}>
+                    가입 승인
+                  </button>
+                )}
+                <button type="button" className="ghost small" onClick={logout}>
+                  로그아웃
+                </button>
+              </>
+            ) : dbAvailable ? (
+              <>
+                <button type="button" className="ghost small" onClick={() => setPanel(panel === "login" ? null : "login")}>
+                  로그인
+                </button>
+                <button type="button" className="ghost small" onClick={() => setPanel(panel === "register" ? null : "register")}>
+                  회사 가입
+                </button>
+              </>
+            ) : (
+              <span className="hint">지금은 로그인 기능을 쓸 수 없어요 (DB 연결 안 됨)</span>
+            )}
+          </nav>
+        </div>
+      </header>
+
+      {panel && (
+        <div className="container panels">
+          {!me && (panel === "login" || panel === "register") && <AuthPanel initial={panel} onDone={signedIn} />}
+          {me && panel === "password" && <PasswordPanel forced={me.mustChangePassword} onDone={(user) => signedIn(user)} />}
+          {me && panel === "members" && me.role === "admin" && <MembersPanel me={me} />}
+          {me && panel === "siteadmin" && me.isSiteAdmin && <SiteAdminPanel />}
+        </div>
       )}
-    </main>
+
+      {/* 위쪽 띠: 처음엔 소개·입력·점수 기준, 평가표가 생기면 대책 전후 매트릭스와 한 줄 요약 */}
+      <section className="band" aria-label={result ? "대책 전후 위험성" : "평가표 만들기"}>
+        <div className={`band-inner${result ? " has-result" : ""}`}>
+          {result && summary ? (
+            <>
+              <div className="band-matrices">
+                <MatrixGrid title="지금" items={result.assessment.항목} phase="before" selected={cell} onSelect={selectCell} />
+                <span className="band-arrow" aria-hidden="true">
+                  →
+                </span>
+                <MatrixGrid title="대책을 하면" items={result.assessment.항목} phase="after" selected={cell} onSelect={selectCell} />
+              </div>
+              <div className="band-summary">
+                <h1 className="band-headline">{summary.headline}</h1>
+                <p className="band-detail">{summary.detail}</p>
+                <p className="band-hint">매트릭스 칸을 누르면 그 칸의 항목만 아래 평가표에 남아요.</p>
+              </div>
+              <div className="band-form">{form}</div>
+            </>
+          ) : (
+            <>
+              <div className="band-intro">
+                <h1 className="band-title">
+                  작업을 말로 설명하면
+                  <br />
+                  위험성평가표 초안이 나와요
+                </h1>
+                <p className="band-detail">
+                  유해·위험요인, 위험성, 감소대책, 관련 법 조항까지 고용노동부 지침의 3×3 빈도·강도법으로 정리하고, 다 만든
+                  초안은 코드가 한 번 더 검사해요.
+                </p>
+                {form}
+              </div>
+              <div className="band-key">
+                <MatrixGrid title="위험성은 이렇게 매겨요" items={null} phase="before" />
+                <MatrixLegend />
+              </div>
+            </>
+          )}
+        </div>
+      </section>
+
+      <main className="container">
+        {result && <ResultView result={result} me={me} cell={cell} onClear={() => setCell(null)} />}
+
+        {me && !me.mustChangePassword && (
+          <section className="history">
+            <h2>우리 회사 평가표</h2>
+            <p className="hint">같은 회사 계정끼리만 보여요. 위험성평가 결과는 기록해 두고 보존해야 하니 CSV나 인쇄본으로도 남겨 두세요.</p>
+            {historyError ? (
+              <p className="placeholder">{historyError}</p>
+            ) : history.length === 0 ? (
+              <p className="placeholder">아직 만든 평가표가 없어요. 위에서 작업을 설명하고 첫 평가표를 만들어 보세요.</p>
+            ) : (
+              <ol>
+                {history.map((item) => (
+                  <li key={item.id}>
+                    <div className="history-row">
+                      <div>
+                        <p className="history-input">{item.title}</p>
+                        <ul className="meta history-meta">
+                          <li>{item.author}</li>
+                          <li>{MODES[item.mode] ?? item.mode}</li>
+                          <li>{item.itemCount}개 항목</li>
+                          <li className={item.passed ? "pass" : "fail"}>검사 {item.passed ? "통과" : "불통과"}</li>
+                          <li>{new Date(item.createdAt).toLocaleString("ko-KR")}</li>
+                        </ul>
+                      </div>
+                      <button type="button" className="ghost" onClick={() => showHistory(item)}>
+                        다시 보기
+                      </button>
+                    </div>
+                    <p className="history-desc">{item.description}</p>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
+        )}
+      </main>
+    </>
   );
 }
 
-function ResultView({ result }: { result: AssessResponse }) {
+const LEVEL_SHORT: Record<RiskLevel, string> = { 높음: "높음", 보통: "보통", 낮음: "낮음" };
+
+function Risk({ l, s }: { l: number; s: number }) {
+  const lv = riskLevel(l, s);
+  return (
+    <span className="risk-mark">
+      <span className={`risk-dot ${LEVEL_CLASS[lv]}`} aria-hidden="true" />
+      <span className="risk-text">
+        {LEVEL_SHORT[lv]} {l * s}
+      </span>
+      <span className="risk-calc">
+        가능성 {l} × 중대성 {s}
+      </span>
+    </span>
+  );
+}
+
+// 결과: 인쇄해서 바로 쓸 수 있는 위험성평가표 서식
+function ResultView({ result, me, cell, onClear }: { result: AssessResponse; me: Me | null; cell: Cell; onClear: () => void }) {
   const { assessment, report } = result;
-  const counts = { 높음: 0, 보통: 0, 낮음: 0 } as Record<RiskLevel, number>;
-  for (const it of assessment.항목) counts[riskLevel(it.가능성, it.중대성)]++;
+  // 매트릭스에서 고른 칸이 있으면 그 칸 항목만 (번호는 원래 순서 유지)
+  const rows = assessment.항목
+    .map((it, i) => ({ it, i }))
+    .filter(({ it }) => {
+      if (!cell) return true;
+      const c = cellOf(it, cell.phase);
+      return c.l === cell.l && c.s === cell.s;
+    });
+  const today = new Date().toLocaleDateString("sv-SE"); // YYYY-MM-DD
 
   return (
-    <section className="result">
-      <div className="result-header">
-        <div>
-          <h2>{assessment.작업명}</h2>
-          <p className="model">
-            {MODES[result.mode]} · {result.model} · {assessment.항목.length}개 항목
-            {result.attempts > 1 && ` · AI 호출 ${result.attempts}회`}
-          </p>
+    <section className="result" aria-labelledby="doc-title">
+      <div className="doc-toolbar">
+        <div className="doc-notes">
+          {result.notice && <p className="notice">{result.notice}</p>}
+          {result.saved && <p className="ok">우리 회사 기록에 저장했어요.</p>}
         </div>
-        <button type="button" className="ghost" onClick={() => downloadCsv(assessment)}>
-          CSV 내려받기
-        </button>
+        <div className="row-actions">
+          <button type="button" className="ghost" onClick={() => downloadCsv(assessment)}>
+            <DownloadIcon size={16} />
+            CSV 내려받기
+          </button>
+          <button
+            type="button"
+            className="primary"
+            onClick={() => {
+              // 칸을 골라 거른 상태여도 인쇄는 전체 평가표로
+              onClear();
+              setTimeout(() => window.print(), 50);
+            }}
+          >
+            <PrinterIcon size={16} />
+            인쇄하기
+          </button>
+        </div>
       </div>
 
-      {result.notice && <p className="notice">{result.notice}</p>}
-      {result.saved && <p className="ok">우리 회사 기록에 저장했어요.</p>}
+      <article className="paper">
+        <header className="doc-head">
+          <div>
+            <h2 id="doc-title">위험성평가표</h2>
+            <p className="doc-basis">사업장 위험성평가에 관한 지침(고용노동부 고시 제2023-19호) 빈도·강도법 3×3</p>
+          </div>
+          <div className={`stamp ${report.ok ? "pass" : "fail"}`} role="img" aria-label={`코드 검사 ${report.ok ? "통과" : "불통과"}`}>
+            <span className="stamp-label">코드 검사</span>
+            <span className="stamp-value">{report.ok ? "통과" : "불통과"}</span>
+          </div>
+        </header>
 
-      <p className="disclaimer">
-        초안입니다. 해당 작업을 하는 근로자와 함께 확인하고 현장에 맞게 고치세요. 위험성평가의 최종 판단과
-        책임은 사업주에게 있습니다.
-        {result.mode === "search" && " 표준모델 검색 초안의 가능성·중대성은 규칙으로 정한 기본값입니다."}
-      </p>
+        <dl className="doc-meta">
+          <div>
+            <dt>사업장</dt>
+            <dd>{me?.companyName ?? " "}</dd>
+          </div>
+          <div>
+            <dt>평가일</dt>
+            <dd>{today}</dd>
+          </div>
+          <div>
+            <dt>작업명</dt>
+            <dd>{assessment.작업명}</dd>
+          </div>
+          <div>
+            <dt>만든 방식</dt>
+            <dd>{result.mode === "ai" ? `AI 초안, 모델 ${result.model}` : MODES[result.mode]}</dd>
+          </div>
+        </dl>
 
-      <CheckView report={report} />
+        <CheckView report={report} searchMode={result.mode === "search"} />
 
-      <div className="levels">
-        {(Object.keys(counts) as RiskLevel[]).map((lv) => (
-          <span key={lv} className={`badge ${LEVEL_CLASS[lv]}`}>
-            위험성 {lv} {counts[lv]}
-          </span>
-        ))}
-      </div>
+        {cell && (
+          <p className="filter-bar" role="status">
+            {cell.phase === "after" ? "대책 후" : "지금"} 가능성 {cell.l} × 중대성 {cell.s} 칸의 항목 {rows.length}개만 보고
+            있어요.
+            <button type="button" className="ghost small" onClick={onClear}>
+              전체 보기
+            </button>
+          </p>
+        )}
 
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>세부작업</th>
-              <th>분류</th>
-              <th>유해·위험요인</th>
-              <th>현재 위험성</th>
-              <th>감소대책</th>
-              <th>개선 후</th>
-              <th>관련근거</th>
-            </tr>
-          </thead>
-          <tbody>
-            {assessment.항목.map((it, i) => {
-              const before = riskLevel(it.가능성, it.중대성);
-              const after = riskLevel(it.개선후가능성, it.개선후중대성);
-              const src = result.sources?.[i];
-              return (
-                <tr key={i}>
-                  <td>{i + 1}</td>
-                  <td>{it.세부작업}</td>
-                  <td className="nowrap">{it.분류}</td>
-                  <td>
-                    {it.유해위험요인}
-                    {it.원인 && <span className="sub">원인: {it.원인}</span>}
-                    {src && <span className="sub">표준모델: {src.표준모델_작업}</span>}
-                  </td>
-                  <td>
-                    <span className={`badge ${LEVEL_CLASS[before]}`}>
-                      {before} {it.가능성}×{it.중대성}
-                    </span>
-                  </td>
-                  <td>
-                    {it.감소대책.length ? (
-                      <ul>
-                        {it.감소대책.map((m, j) => (
-                          <li key={j}>{m}</li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <span className="sub">-</span>
-                    )}
-                  </td>
-                  <td>
-                    <span className={`badge ${LEVEL_CLASS[after]}`}>
-                      {after} {it.개선후가능성}×{it.개선후중대성}
-                    </span>
-                  </td>
-                  <td className="law">{it.관련근거 || "-"}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+        <div className="table-wrap" id="result-table">
+          <table className="doc-table">
+            <thead>
+              <tr>
+                <th scope="col">번호</th>
+                <th scope="col">세부작업</th>
+                <th scope="col">유해·위험요인</th>
+                <th scope="col">현재 위험성</th>
+                <th scope="col">감소대책</th>
+                <th scope="col">개선 후</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(({ it, i }) => {
+                const src = result.sources?.[i];
+                return (
+                  <tr key={i}>
+                    <td className="num" data-label="번호">
+                      {i + 1}
+                    </td>
+                    <td className="task" data-label="세부작업">
+                      {it.세부작업}
+                      <span className="sub">{it.분류}</span>
+                    </td>
+                    <td className="hazard" data-label="유해·위험요인">
+                      {it.유해위험요인}
+                      {it.원인 && <span className="sub">원인: {it.원인}</span>}
+                      {src && <span className="sub">표준모델: {src.표준모델_작업}</span>}
+                      {it.관련근거 && <span className="law-ref">근거: {it.관련근거}</span>}
+                    </td>
+                    <td className="risk before" data-label="현재 위험성">
+                      <Risk l={it.가능성} s={it.중대성} />
+                    </td>
+                    <td className="measures" data-label="감소대책">
+                      {it.감소대책.length ? (
+                        <ul>
+                          {it.감소대책.map((m, j) => (
+                            <li key={j}>{m}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <span className="sub">감소대책이 없어요</span>
+                      )}
+                    </td>
+                    <td className="risk after" data-label="개선 후">
+                      <Risk l={it.개선후가능성} s={it.개선후중대성} />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="signoff">
+          <div>
+            <span className="signoff-label">평가한 사람</span>
+            <span className="signoff-value">{me?.name ?? ""}</span>
+          </div>
+          <div>
+            <span className="signoff-label">근로자 확인</span>
+            <span className="signoff-value" />
+          </div>
+          <div>
+            <span className="signoff-label">사업주 확인</span>
+            <span className="signoff-value" />
+          </div>
+        </div>
+
+        <p className="doc-foot">
+          <InfoIcon size={14} />
+          초안입니다. 이 작업을 하는 근로자와 함께 확인하고 현장에 맞게 고치세요. 위험성평가의 최종 판단과 책임은 사업주에게
+          있습니다.
+          {result.mode === "search" && " 표준모델 검색 초안의 가능성·중대성은 규칙으로 정한 기본값입니다."}
+        </p>
+      </article>
     </section>
   );
 }
 
-function CheckView({ report }: { report: ValidationReport }) {
+function CheckView({ report, searchMode }: { report: ValidationReport; searchMode: boolean }) {
+  if (report.ok && report.warnings.length === 0) return null;
   return (
     <div className={`check ${report.ok ? "pass" : "fail"}`}>
       <p className="check-title">
-        코드 검사: {report.ok ? "통과" : `오류 ${report.errors.length}개`}
-        {report.warnings.length > 0 && ` · 확인 필요 ${report.warnings.length}개`}
+        {report.ok ? <CheckCircleIcon size={18} /> : <AlertIcon size={18} />}
+        {report.ok ? "검사는 통과했고, 사람이 확인할 것이 있어요" : `고쳐야 할 오류 ${report.errors.length}개`}
+        {report.warnings.length > 0 && !report.ok && `, 확인할 것 ${report.warnings.length}개`}
       </p>
       {report.errors.length > 0 && (
         <ul className="errors">
@@ -389,6 +555,7 @@ function CheckView({ report }: { report: ValidationReport }) {
           ))}
         </ul>
       )}
+      {searchMode && report.warnings.length > 0 && <p className="hint">표준모델에 없는 조항은 국가법령정보센터에서 원문을 확인하세요.</p>}
     </div>
   );
 }
