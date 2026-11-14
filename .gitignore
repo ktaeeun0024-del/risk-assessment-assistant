@@ -7,3 +7,13 @@ venv/
 .DS_Store
 logs/
 data/raw/
+
+# 키 파일
+.env
+.env.local
+
+# Next.js
+node_modules/
+.next/
+next-env.d.ts
+*.tsbuildinfo

@@ -121,9 +121,31 @@ def build() -> pd.DataFrame:
     return out
 
 
+JSON_OUT = ROOT / "data" / "standard_models.json"
+JSON_COLUMNS = ["작업명", "세부작업", "분류(정리)", "원인", "유해위험요인", "관련근거", "법조항", "감소대책", "출처파일"]
+
+
+def export_json(df: pd.DataFrame) -> int:
+    """웹앱(Next.js)이 읽는 압축 JSON. 분류가 정리되고 위험요인이 있는 행만, 열 이름은 한 번만 적는다."""
+    import json
+
+    from src.schema import CATEGORIES
+    keep = df[df["분류(정리)"].isin(CATEGORIES) & (df["유해위험요인"].str.strip() != "")]
+    payload = {"columns": JSON_COLUMNS, "rows": keep[JSON_COLUMNS].astype(str).values.tolist()}
+    JSON_OUT.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    return len(keep)
+
+
 if __name__ == "__main__":
+    import sys
+
+    if "--json-only" in sys.argv:  # CSV는 그대로 두고 웹앱용 JSON만 다시 만든다
+        n = export_json(pd.read_csv(OUT, dtype=str).fillna(""))
+        print(f"{n}행 → {JSON_OUT.name}")
+        raise SystemExit
     df = build()
     df.to_csv(OUT, index=False, encoding="utf-8-sig")
+    print(f"웹앱용 JSON: {export_json(df)}행 → {JSON_OUT.name}")
     print(f"{len(df)}행, 작업 {df['작업명'].nunique()}종, 파일 {df['출처파일'].nunique()}개 → {OUT.name}")
     print(df["부문"].value_counts().to_dict())
     print("관련근거 있는 행:", (df.get("관련근거", pd.Series(dtype=str)) != "").sum())
