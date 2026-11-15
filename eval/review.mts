@@ -1,15 +1,16 @@
 // 사람 판정: 자동 채점(match.ts)이 놓치거나 잘못 짝지은 것을 사람이 바로잡아 재현율을 다시 계산한다.
 // 자동 채점은 글자가 겹치는지만 보므로 '칼에 손 베임' ↔ '칼날에 베임 위험'처럼 말이 다르면 놓친다.
 //
-// 1) 판정지 만들기:  npm run eval:review -- eval/results/<측정결과>.json
+// 1) 판정지 만들기:  npm run eval:review -- eval/results/<측정결과>.json [--cases E01,E02,…]
 //    → 같은 폴더에 <측정결과>.review.json 이 생긴다 (이미 있으면 덮어쓰지 않음)
 // 2) 판정지의 "판정" 칸을 채운다
 //    - 초안: 번호가 붙은 AI 초안 목록 (참고용, 고치지 않음)
-//    - 자동짝: 자동 채점이 맞혔다고 한 짝. 실제로 같은 위험이 아니면 "맞음"을 "틀림"으로 바꾼다
+//    - 자동짝: 자동 채점이 맞혔다고 한 짝. 실제로 같은 위험이 아니면 "맞음"을 "틀림"으로 바꾼다.
+//      다른 초안이 그 정답과 같은 위험이면 그 초안 번호를 쓴다 (짝 바꾸기)
 //    - 놓친정답: 자동 채점이 못 찾았다고 한 정답. 같은 뜻의 초안이 있으면 그 초안 번호를, 없으면 "없음"을 쓴다
 //      (후보 = 겹침이 큰 초안 3개, 참고용. 후보 밖의 번호를 써도 된다)
-//    - 남은초안: 어느 정답과도 짝이 안 된 초안. "맞는 위험"(정답엔 없지만 실제로 있을 만한 위험) / "틀림" / "중복"
-//      놓친정답에 번호를 적은 초안은 비워 둬도 된다
+//    - 초안판정: 모든 초안. 최종적으로 어느 정답과도 짝이 안 된 초안만 "맞는 위험"(정답엔 없지만 실제로 있을 만한 위험)
+//      / "틀림" / "중복"을 쓴다. 정답과 짝지은 초안(자동짝 맞음·짝 바꾸기·놓친정답 번호)은 비워 둔다
 // 3) 다시 계산:      npm run eval:review -- --apply eval/results/<측정결과>.review.json
 //
 // 초안 하나는 정답 하나에만 짝지을 수 있다 (1:1). 같은 번호를 두 번 쓰면 알려 준다.
@@ -24,17 +25,19 @@ type ReviewCase = {
   id: string;
   title: string;
   초안: string[];
-  자동짝: { 정답: string; 초안번호: number; 초안: string; 판정: "맞음" | "틀림" }[];
+  자동짝: { 정답: string; 초안번호: number; 초안: string; 판정: string }[];
   놓친정답: { 정답: string; 후보: string[]; 판정: string }[];
-  남은초안: { 번호: number; 초안: string; 판정: string }[];
+  초안판정: { 번호: number; 초안: string; 자동짝?: true; 판정: string }[];
 };
 type Review = { 측정결과: string; 모델: string; 판정자: string; 안내: string; cases: ReviewCase[] };
 
 const args = process.argv.slice(2);
 const applyMode = args.includes("--apply");
-const file = args.find((a) => !a.startsWith("--"));
+const casesArg = args.indexOf("--cases");
+const only = casesArg >= 0 ? new Set(args[casesArg + 1]?.split(",").map((x) => x.trim())) : null;
+const file = args.find((a, i) => !a.startsWith("--") && i !== casesArg + 1);
 if (!file || !existsSync(file)) {
-  console.error("사용법: npm run eval:review -- eval/results/<측정결과>.json  |  --apply <판정지>.review.json");
+  console.error("사용법: npm run eval:review -- eval/results/<측정결과>.json [--cases E01,E02]  |  --apply <판정지>.review.json");
   process.exit(1);
 }
 
@@ -42,7 +45,9 @@ if (!applyMode) makeSheet(file);
 else applySheet(file);
 
 function makeSheet(resultFile: string) {
-  const out = resultFile.replace(/\.json$/, ".review.json");
+  // --cases로 일부만 판정할 때는 파일 이름에 범위를 붙인다 (예: ….E01-E10.review.json)
+  const ids = only ? [...only].sort() : [];
+  const out = resultFile.replace(/\.json$/, only ? `.${ids[0]}-${ids[ids.length - 1]}.review.json` : ".review.json");
   if (existsSync(out)) {
     console.error(`이미 판정지가 있습니다: ${out} (지우고 다시 만들거나 --apply로 계산하세요)`);
     process.exit(1);
@@ -50,6 +55,7 @@ function makeSheet(resultFile: string) {
   const result = JSON.parse(readFileSync(resultFile, "utf8")) as Result;
   const cases: ReviewCase[] = [];
   for (const row of result.rows) {
+    if (only && !only.has(row.id)) continue;
     if (!row.ok || !row.score || !row.predicted) continue;
     const pred = row.predicted;
     const num = (text: string) => pred.indexOf(text) + 1;
@@ -69,7 +75,7 @@ function makeSheet(resultFile: string) {
           .map(({ p }) => `${p.번호}) ${p.text}`);
         return { 정답: gold, 후보, 판정: "" };
       }),
-      남은초안: free.map((p) => ({ 번호: p.번호, 초안: p.text, 판정: "" })),
+      초안판정: pred.map((text, i) => ({ 번호: i + 1, 초안: text, ...(pairedNums.has(i + 1) ? { 자동짝: true as const } : {}), 판정: "" })),
     });
   }
   const sheet: Review = {
@@ -77,7 +83,7 @@ function makeSheet(resultFile: string) {
     모델: result.summary.model,
     판정자: "",
     안내:
-      "자동짝: 같은 위험이 아니면 '틀림'. 놓친정답: 같은 뜻 초안 번호 또는 '없음'. 남은초안: '맞는 위험' / '틀림' / '중복' (놓친정답에 쓴 번호는 비워도 됨). 다 채우면 npm run eval:review -- --apply <이 파일>",
+      "자동짝: 같은 위험이 아니면 '틀림', 다른 초안이 맞으면 그 번호. 놓친정답: 같은 뜻 초안 번호 또는 '없음'. 초안판정: 정답과 짝이 안 된 초안만 '맞는 위험' / '틀림' / '중복' (짝지은 초안은 비워 둠). 다 채우면 npm run eval:review -- --apply <이 파일>",
     cases,
   };
   writeFileSync(out, JSON.stringify(sheet, null, 2) + "\n");
@@ -103,9 +109,14 @@ function applySheet(sheetFile: string) {
     };
     let found = 0;
     for (const p of c.자동짝) {
-      if (p.판정 === "틀림") autoWrong++;
-      else if (p.판정 === "맞음") { found++; autoFound++; use(p.초안번호, "자동짝"); }
-      else problems.push(`${c.id} 자동짝 판정은 '맞음' 또는 '틀림': "${p.판정}"`);
+      const v = String(p.판정).trim();
+      if (v === "틀림") autoWrong++;
+      else if (v === "맞음") { found++; autoFound++; use(p.초안번호, "자동짝"); }
+      else if (/^\d+$/.test(v)) {
+        // 짝 바꾸기: 정답은 맞혔지만 자동 채점이 다른 초안과 짝지었다
+        autoWrong++; found++; humanFound++;
+        use(Number(v), `자동짝 "${p.정답.slice(0, 15)}…"`);
+      } else problems.push(`${c.id} 자동짝 판정은 '맞음', '틀림' 또는 초안 번호: "${p.판정}"`);
     }
     // 자동짝이 '틀림'이면 그 정답은 놓친 것으로 본다 (사람이 다른 초안을 찾아 짝지을 수 있게 놓친정답에 추가하지는 않음)
     for (const m of c.놓친정답) {
@@ -120,7 +131,7 @@ function applySheet(sheetFile: string) {
     gold += caseGold;
     // 초안 품질: 정답과 짝지어졌거나(사람 판정 포함) '맞는 위험'이면 쓸 만한 항목
     let valid = used.size;
-    for (const r of c.남은초안) {
+    for (const r of c.초안판정) {
       if (used.has(r.번호)) continue;
       const v = String(r.판정).trim();
       if (v === "맞는 위험") valid++;
