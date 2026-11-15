@@ -84,12 +84,23 @@ function queryTerms(clause: string): string {
 }
 
 type Index = { rows: StandardRow[]; docs: Map<string, number>[]; lens: number[]; df: Map<string, number>; avg: number };
-let cached: Index | null = null;
+// 검색 색인. 기본(전체 표준모델)과, 검증 측정 때 쓰는 '원본 파일 제외' 색인을 따로 캐시한다.
+const cache = new Map<string, Index>();
 
-function index(): Index {
-  if (cached) return cached;
+// 검증 측정(eval/)에서만 쓴다: 평가 대상 작업의 원본 파일을 빼고 검색해야
+// "처음 보는 작업"에서의 실력을 잴 수 있다 (정답을 검색으로 그대로 가져오는 것을 막음).
+export type RetrieveOptions = { excludeFiles?: ReadonlySet<string> };
+
+function index(opts: RetrieveOptions = {}): Index {
+  const exclude = opts.excludeFiles;
+  const key = exclude?.size ? [...exclude].sort().join("|") : "";
+  const hit = cache.get(key);
+  if (hit) return hit;
   const rows = STANDARD_ROWS.filter(
-    (r) => (CATEGORIES as readonly string[]).includes(r.분류) && r.유해위험요인.trim() !== "",
+    (r) =>
+      (CATEGORIES as readonly string[]).includes(r.분류) &&
+      r.유해위험요인.trim() !== "" &&
+      !exclude?.has(r.출처파일),
   );
   // 유해위험요인은 두 번 넣어 가중치를 준다
   const docs = rows.map((r) => count(bigrams([r.세부작업, r.유해위험요인, r.원인, r.유해위험요인].join(" "))));
@@ -97,13 +108,14 @@ function index(): Index {
   const df = new Map<string, number>();
   for (const d of docs) for (const t of d.keys()) df.set(t, (df.get(t) ?? 0) + 1);
   const avg = lens.reduce((a, b) => a + b, 0) / docs.length;
-  cached = { rows, docs, lens, df, avg };
-  return cached;
+  const built = { rows, docs, lens, df, avg };
+  cache.set(key, built);
+  return built;
 }
 
 // BM25. [행 번호, 점수]를 점수 높은 순으로.
-export function search(query: string, k: number, minScore = MIN_SCORE): [number, number][] {
-  const { docs, lens, df, avg } = index();
+export function search(query: string, k: number, minScore = MIN_SCORE, opts: RetrieveOptions = {}): [number, number][] {
+  const { docs, lens, df, avg } = index(opts);
   const n = docs.length;
   const q = [...count(bigrams(query)).keys()];
   const scores: [number, number][] = [];
@@ -185,8 +197,12 @@ export type Source = {
   표준모델_세부작업: string;
 };
 
-export function retrieveDraft(description: string, title = ""): { assessment: Assessment; sources: Source[] } {
-  const { rows } = index();
+export function retrieveDraft(
+  description: string,
+  title = "",
+  opts: RetrieveOptions = {},
+): { assessment: Assessment; sources: Source[] } {
+  const { rows } = index(opts);
   const items: AssessmentItem[] = [];
   const sources: Source[] = [];
 
@@ -208,7 +224,7 @@ export function retrieveDraft(description: string, title = ""): { assessment: As
   const clauses = splitClauses(description);
   let prevStart = 0;
   for (const clause of clauses) {
-    let hits = search(expand(clause), PER_CLAUSE);
+    let hits = search(expand(clause), PER_CLAUSE, MIN_SCORE, opts);
     // 구절의 1등 점수보다 많이 낮은 것은 버린다 (억지로 채운 항목 방지)
     if (hits.length) hits = hits.filter((h) => h[1] >= RELATIVE_CUT * hits[0][1]);
     if (!hits.length) {
@@ -220,7 +236,7 @@ export function retrieveDraft(description: string, title = ""): { assessment: As
     prevStart = items.length;
     add(clause, hits);
   }
-  add(COMMON_CLAUSE, search(COMMON_QUERY, 2));
+  add(COMMON_CLAUSE, search(COMMON_QUERY, 2, MIN_SCORE, opts));
 
   return {
     assessment: { 작업명: title || short(clauses[0] ?? description, 20), 항목: items },

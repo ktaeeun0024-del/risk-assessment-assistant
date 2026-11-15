@@ -15,9 +15,11 @@ import {
 import { validate } from "./validator";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-// 기본은 무료 모델 중 하나를 골라 쓰는 openrouter/free. 검증 측정처럼 결과를 비교해야 할 때는
-// OPENROUTER_MODEL에 무료 모델 하나를 이름으로 고정한다 (예: 모델ID:free)
-const MODEL = process.env.OPENROUTER_MODEL?.trim() || "openrouter/free";
+// 기본 모델: 검증 측정(eval/README.md)에서 고른 무료 모델. 2종 시험에서 위험요인 재현율 41%로
+// 후보 3개 중 가장 높았다 (gemma-4-31b는 요청 과다로 실패, nemotron-3.5-super-vl은 19%).
+// 다른 모델을 쓰려면 OPENROUTER_MODEL에 이름을 넣는다 ("openrouter/free"는 부를 때마다 모델이 바뀜)
+export const DEFAULT_MODEL = "nvidia/nemotron-3-ultra-550b-a55b:free";
+const MODEL = process.env.OPENROUTER_MODEL?.trim() || DEFAULT_MODEL;
 // 배포 사이트의 서버 실행 시간 제한(Netlify 무료는 약 10초)보다 짧게 AI_TIMEOUT_MS를 주면
 // 시간 안에 AI를 포기하고 검색 초안으로 넘어간다. 기본 90초.
 const TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS) > 0 ? Number(process.env.AI_TIMEOUT_MS) : 90_000;
