@@ -7,6 +7,7 @@ import {
   MAX_LENGTH,
   MIN_LENGTH,
   MODES,
+  isPending,
   type AssessResponse,
   type Mode,
 } from "@/lib/options";
@@ -28,6 +29,7 @@ export default function Home() {
   const [mode, setMode] = useState<Mode>(DEFAULT_MODE);
   const [result, setResult] = useState<AssessResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [waitSec, setWaitSec] = useState(0);
   const [error, setError] = useState("");
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [historyError, setHistoryError] = useState("");
@@ -93,6 +95,7 @@ export default function Home() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
+    setWaitSec(0);
     setError("");
     showResult(null);
     try {
@@ -101,10 +104,23 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ description, mode: effectiveMode }),
       });
-      const data = await res.json().catch(() => null);
+      let data = await res.json().catch(() => null);
       if (!res.ok || !data) {
         throw new Error(data?.error ?? "서버와 연결이 원활하지 않아요. 잠시 후 다시 시도해 주세요.");
       }
+      // 배포 사이트: AI가 뒤에서 작성 중이면 3초마다 결과를 확인한다 (최대 약 3분)
+      const started = Date.now();
+      while (isPending(data) && Date.now() - started < 200_000) {
+        await new Promise((r) => setTimeout(r, 3_000));
+        setWaitSec(Math.round((Date.now() - started) / 1000));
+        const poll = await fetch(`/api/assess?job=${data.jobId}`);
+        const next = await poll.json().catch(() => null);
+        if (!next || (!poll.ok && poll.status !== 202)) {
+          throw new Error(next?.error ?? "결과를 확인하지 못했어요. 잠시 후 '최근 기록'에서 확인해 주세요.");
+        }
+        data = next;
+      }
+      if (isPending(data)) throw new Error("AI가 아직 작성 중이에요. 잠시 후 '최근 기록'에서 확인해 주세요.");
       showResult(data);
       if (me) loadHistory();
     } catch (err) {
@@ -199,7 +215,11 @@ export default function Home() {
             : "로그인하지 않아도 표준모델 검색 초안은 만들 수 있어요. AI 초안과 회사 기록 저장은 로그인한 회사 계정만 쓸 수 있어요."}
         </p>
       )}
-      {loading && effectiveMode === "ai" && <p className="hint">무료 AI 모델이라 30초~1분쯤 걸릴 수 있어요.</p>}
+      {loading && effectiveMode === "ai" && (
+        <p className="hint" aria-live="polite">
+          무료 AI 모델이라 1~2분쯤 걸려요.{waitSec > 0 && ` (${waitSec}초째 작성 중)`}
+        </p>
+      )}
       {error && (
         <p className="error" role="alert">
           {error}

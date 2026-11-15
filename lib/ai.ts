@@ -69,7 +69,11 @@ export class DraftError extends Error {
   }
 }
 
-async function callOpenRouter(apiKey: string, messages: Message[]): Promise<{ content: string; model: string }> {
+async function callOpenRouter(
+  apiKey: string,
+  messages: Message[],
+  timeoutMs = TIMEOUT_MS,
+): Promise<{ content: string; model: string }> {
   let res: Response;
   try {
     res = await fetch(OPENROUTER_URL, {
@@ -80,7 +84,7 @@ async function callOpenRouter(apiKey: string, messages: Message[]): Promise<{ co
         "X-Title": "risk-assessment-assistant",
       },
       body: JSON.stringify({ model: MODEL, messages, temperature: 0.2 }),
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      signal: AbortSignal.timeout(timeoutMs),
     });
   } catch (err) {
     const timedOut = err instanceof Error && err.name === "TimeoutError";
@@ -151,7 +155,21 @@ export type AiDraft = {
   attempts: number;
 };
 
-export async function aiDraft(apiKey: string, description: string, reference: string): Promise<AiDraft> {
+// 다시 부르려면 최소 이만큼은 남아 있어야 한다 (무료 모델 1번에 보통 60~90초)
+const MIN_RETRY_MS = 50_000;
+
+export type DraftOptions = {
+  // 이 시각(Date.now() 기준 ms)까지 끝내야 한다. 정하면 호출마다 남은 시간만큼만 기다리고,
+  // 남은 시간이 모자라면 다시 부르지 않고 그때까지의 결과를 돌려준다 (Supabase 함수는 최대 150초).
+  deadline?: number;
+};
+
+export async function aiDraft(
+  apiKey: string,
+  description: string,
+  reference: string,
+  opts: DraftOptions = {},
+): Promise<AiDraft> {
   const messages: Message[] = [
     { role: "system", content: SYSTEM_PROMPT },
     {
@@ -172,8 +190,13 @@ export async function aiDraft(apiKey: string, description: string, reference: st
   let formatRetried = false;
   let repaired = false;
   while (attempts < 3) {
+    const left = opts.deadline ? opts.deadline - Date.now() : TIMEOUT_MS;
+    if (attempts > 0 && opts.deadline && left < MIN_RETRY_MS) {
+      console.error("[assess] 남은 시간이 모자라 다시 요청하지 않습니다.");
+      break;
+    }
     attempts++;
-    const { content, model } = await callOpenRouter(apiKey, messages);
+    const { content, model } = await callOpenRouter(apiKey, messages, opts.deadline ? Math.max(left, 1_000) : TIMEOUT_MS);
     lastModel = model;
     const parsed = parseAssessment(content);
     if (!parsed) {

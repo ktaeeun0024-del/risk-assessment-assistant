@@ -54,7 +54,8 @@ npm run build && npm start
 | `OPENROUTER_API_KEY` | OpenRouter API 키 (https://openrouter.ai/settings/keys 에서 발급). 없으면 표준모델 검색 초안만 나옵니다 |
 | `DATABASE_URL` | PostgreSQL 접속 주소 (예: `postgresql://사용자:비밀번호@호스트:5432/DB이름`) |
 | `OPENROUTER_MODEL` | (선택) 비워 두면 `nvidia/nemotron-3-ultra-550b-a55b:free`. 다른 무료 모델로 바꿀 때만 넣음 (`openrouter/free`는 부를 때마다 모델이 바뀜) |
-| `AI_TIMEOUT_MS` | (선택) AI 대기 시간(밀리초). 기본 90000. Netlify 무료처럼 서버 실행 시간이 약 10초로 제한된 곳에서는 8000 정도로 두면 시간 안에 검색 초안으로 넘어감 |
+| `AI_JOB_URL` | (배포용) Supabase Edge Function 주소 `https://<프로젝트 ref>.supabase.co/functions/v1/ai-draft`. 넣으면 AI 초안을 Supabase에서 뒤에서 만들고 화면이 결과를 확인함. 비우면 그 자리에서 AI를 기다림(실습서버 개발용) |
+| `AI_TIMEOUT_MS` | (선택) `AI_JOB_URL`이 없을 때의 AI 대기 시간(밀리초). 기본 90000 |
 | `SITE_ADMIN_EMAILS` | 회사 가입을 승인하는 사이트 관리자 이메일 (쉼표로 여러 명) |
 | `SMTP_USER` · `SMTP_PASS` | 인증번호 메일을 보낼 Gmail 주소와 Gmail **앱 비밀번호**(Google 계정 → 보안 → 2단계 인증을 켠 뒤 '앱 비밀번호'에서 발급, 16자리). 개발 중에 비워 두면 메일 대신 서버 터미널에 인증번호가 찍힙니다. 배포 환경에서는 꼭 넣어야 가입이 됩니다 |
 | `NTS_SERVICE_KEY` | (선택) 공공데이터포털 '국세청_사업자등록정보 진위확인 및 상태조회 서비스' 일반 인증키(Decoding). 없으면 국세청 조회는 '확인 못 함'으로 저장되고 관리자가 직접 확인합니다 |
@@ -62,7 +63,9 @@ npm run build && npm start
 ### 배포 (Netlify + Supabase)
 1. Supabase에서 새 프로젝트를 만들고(지역: Northeast Asia (Seoul)) DB 비밀번호를 정해 둡니다.
 2. 프로젝트의 **Connect** → **Transaction pooler** 주소(포트 6543)를 복사하고 `[YOUR-PASSWORD]`를 DB 비밀번호로 바꿉니다. Netlify 서버는 IPv4만 쓰므로 Direct connection 주소 대신 pooler 주소를 씁니다.
-3. Netlify → Site configuration → Environment variables에 `DATABASE_URL`(위 주소), `OPENROUTER_API_KEY`, `AI_TIMEOUT_MS=8000`, `SITE_ADMIN_EMAILS`, `SMTP_USER`, `SMTP_PASS`, (선택) `NTS_SERVICE_KEY`를 넣고 다시 배포합니다. 테이블은 첫 요청 때 자동으로 만들어집니다.
+3. Netlify → Site configuration → Environment variables에 `DATABASE_URL`(위 주소), `OPENROUTER_API_KEY`, `AI_JOB_URL`, `SITE_ADMIN_EMAILS`, `SMTP_USER`, `SMTP_PASS`, (선택) `NTS_SERVICE_KEY`를 넣고 다시 배포합니다. 테이블은 첫 요청 때 자동으로 만들어집니다.
+3-1. **AI 초안 (Supabase Edge Function)**: Netlify 무료 서버 함수는 약 10초 안에 끝나야 하는데 무료 AI는 1~2분 걸린다. 그래서 AI는 Supabase Edge Function(무료 최대 150초)이 뒤에서 만든다.
+   `npm run build:edge`로 `supabase/functions/ai-draft/index.js`(lib/ai.ts까지 묶은 파일)를 만들어 함수 이름 `ai-draft`, JWT 검증 끔으로 배포한다(작업마다 일회용 토큰으로 확인). OpenRouter 키는 Netlify가 요청 머리글로 함께 보내며, Supabase Secrets에 `OPENROUTER_API_KEY`를 넣으면 그것을 먼저 쓴다.
 4. Netlify Build settings: Build command `npm run build`, Publish directory `.next`
 
 ## 데이터
@@ -84,7 +87,10 @@ app/api/history/route.ts  최근 기록 5개
 lib/schema.ts             평가표 형식, KRAS 6분류, 3x3 위험성 등급, 법 조항 추출
 lib/validator.ts          평가표 검사기
 lib/retrieve.ts           표준모델 검색 초안 (BM25, src/retrieve_draft.py와 같은 결과)
-lib/ai.ts                 OpenRouter 무료 모델 호출, JSON 파싱, 검사 오류 수정 요청
+lib/ai.ts                 OpenRouter 무료 모델 호출, JSON 파싱, 검사 오류 수정 요청 (마감 시각을 넘기지 않게 재요청 조절)
+lib/ai-jobs.ts            배포 사이트의 AI 작업: ai_jobs에 적고 Edge Function 호출 → 결과 확인·기록 저장
+supabase/functions/ai-draft/  Supabase Edge Function (source.ts 원본 → npm run build:edge → index.js 배포)
+eval/                     검증 측정 (검증 세트 20종, 재현율 채점, 사람 판정)
 lib/db.ts                 PostgreSQL 저장·조회
 src/, scripts/            파이썬 데이터 처리 (표준모델 내려받기·정리, 검사기·검색 원본)
 src/draft.py              (실험) Claude API로 만드는 초안. 웹 앱에서는 쓰지 않음

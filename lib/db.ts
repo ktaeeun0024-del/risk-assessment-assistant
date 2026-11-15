@@ -1,7 +1,7 @@
 // PostgreSQL 접속과 테이블 준비. 서버에서만 쓴다.
 //
 // 테이블: companies(회사, 사이트 관리자 승인 필요) / users(계정, 회사 하나에 속함) / sessions(로그인 상태)
-//        / assessment_history(평가표 기록) / email_codes(이메일 인증번호)
+//        / assessment_history(평가표 기록) / email_codes(이메일 인증번호) / ai_jobs(배포 사이트의 AI 초안 작업)
 // 회사별 분리: 평가표 기록은 반드시 로그인한 계정의 company_id로만 저장·조회한다. company_id는 화면에서 받지 않는다.
 // Supabase에서는 모든 테이블에 RLS를 켜 두고 정책을 만들지 않는다. 그러면 Supabase의 공개 REST API(anon 키)로는
 // 아무 행도 읽을 수 없고, 이 앱(테이블 소유자 계정으로 접속)만 읽고 쓸 수 있다.
@@ -80,6 +80,27 @@ const SCHEMA = `
   CREATE INDEX IF NOT EXISTS email_codes_lookup_idx ON email_codes(email, purpose, created_at DESC);
   CREATE INDEX IF NOT EXISTS email_codes_company_idx ON email_codes(company_id) WHERE company_id IS NOT NULL;
 
+  -- AI 초안 작업 (배포 사이트용). Netlify는 약 10초 안에 끝나야 해서, 작업을 여기 적고 Supabase Edge Function이
+  -- 뒤에서 AI를 불러 결과를 채운다 (supabase/functions/ai-draft). 토큰은 해시만 저장한다. 하루 지난 작업은 지운다.
+  CREATE TABLE IF NOT EXISTS ai_jobs (
+    id          text PRIMARY KEY,
+    company_id  integer NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+    user_id     integer REFERENCES users(id) ON DELETE SET NULL,
+    token_hash  text NOT NULL,
+    description text NOT NULL,
+    reference   text NOT NULL,
+    fallback    jsonb NOT NULL,
+    status      text NOT NULL DEFAULT 'queued' CHECK (status IN ('queued', 'running', 'done', 'failed')),
+    result      jsonb,
+    error       text,
+    saved       boolean NOT NULL DEFAULT false,
+    created_at  timestamptz NOT NULL DEFAULT now(),
+    started_at  timestamptz,
+    finished_at timestamptz
+  );
+  CREATE INDEX IF NOT EXISTS ai_jobs_created_idx ON ai_jobs(created_at);
+
+  ALTER TABLE ai_jobs ENABLE ROW LEVEL SECURITY;
   ALTER TABLE email_codes ENABLE ROW LEVEL SECURITY;
   ALTER TABLE companies ENABLE ROW LEVEL SECURITY;
   ALTER TABLE users ENABLE ROW LEVEL SECURITY;

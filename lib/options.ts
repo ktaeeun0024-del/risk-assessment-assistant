@@ -45,3 +45,8 @@ export type AssessResponse = {
   // 로그인한 회사 기록에 저장됐는지
   saved?: boolean;
 };
+
+// 배포 사이트에서 AI 초안을 뒤에서 만드는 중일 때 (화면이 jobId로 몇 초마다 결과를 확인한다)
+export type AssessPending = { pending: true; jobId: string };
+export const isPending = (v: unknown): v is AssessPending =>
+  typeof v === "object" && v !== null && (v as { pending?: unknown }).pending === true;
