@@ -1,50 +1,54 @@
-/* 위험성평가 도우미 — 디자인 토큰
-   방향: 산업안전 표지판의 언어. 표지 잉크(짙은 남색)로 글자·버튼, 안전 노랑은 로고와 선택 표시에만,
-   빨강·주황·초록은 위험성 단계에만 쓴다. 한 곳(위험성 매트릭스)만 눈에 띄게 하고 나머지는 조용히.
+/* 반장노트 — 디자인 토큰
+   방향: 해가 진 뒤의 작업장 사무실. 따뜻한 숯색 바탕에 상아색 글자, 포인트는 놋쇠색 하나.
+   글꼴은 Pretendard 하나. 제목은 가는 굵기(300)로 크게, 본문·입력은 400. 모서리는 거의 직각, 그림자 없이 가는 선.
+   빨강·주황·초록은 위험성 단계에만 쓴다. 평가표 서식(.paper)은 상아색 종이로 놓고 인쇄하면 흰 종이 서식이 된다.
    대비: 본문 4.5:1 이상. */
 :root {
-  --bg: #e7eae6;
-  --surface: #ffffff;
-  --surface-2: #f3f5f2;
-  --text: #17212b;
-  --muted: #4f5a64;
-  --border: #d2d8d3;
-  --border-strong: #aab4ad;
+  --bg: #262321;
+  --surface: #2e2a27;
+  --surface-2: #36312d;
+  --text: #ece5d8;
+  --muted: #a99f92;
+  --border: #423c37;
+  --border-strong: #5e564f;
 
-  --primary: #17212b;
-  --primary-hover: #2b3a49;
-  --primary-soft: #e4e8ec;
-  --on-primary: #ffffff;
-  --ring: #17212b;
+  /* 놋쇠: 주 버튼·선택 표시·포인트 */
+  --primary: #b8965c;
+  --primary-hover: #c9a86d;
+  --primary-soft: #3a3226;
+  --on-primary: #1f1c1a;
+  --ring: #d4b67e;
 
-  --signal: #f5c400;
-  --signal-ink: #17212b;
+  --signal: #b8965c;
+  --signal-ink: #1f1c1a;
 
-  /* 위쪽 띠 (표지 잉크 바탕) */
-  --band: #17212b;
-  --on-band: #ffffff;
-  --on-band-muted: #b9c3cc;
-  --band-line: #33424f;
+  /* 위쪽 띠·상단 바 (깊은 숯) */
+  --band: #1f1c1a;
+  --on-band: #ece5d8;
+  --on-band-muted: #a99f92;
+  --band-line: #3d3732;
 
-  --error: #b3261e;
-  --high: #b3261e;
-  --high-bg: #fbe3e0;
-  --mid: #8f4500;
-  --mid-bg: #fdebd3;
-  --low: #1b6b43;
-  --low-bg: #ddf0e4;
+  --error: #f0a396;
+  --high: #f0a396;
+  --high-bg: #3d221e;
+  --mid: #f2c27a;
+  --mid-bg: #3b2e1b;
+  --low: #a6d1ac;
+  --low-bg: #1f3024;
 
-  /* 매트릭스 칸 (큰 글자라 3:1 이상) */
-  --cell-high: #d6392a;
-  --cell-mid: #f2a33a;
-  --cell-low: #3a9562;
+  /* 매트릭스 칸: 어두운 바탕에 맞게 채도를 낮춘 3색 (큰 글자라 3:1 이상) */
+  --cell-high: #b5473a;
+  --cell-mid: #cf9443;
+  --cell-low: #4f8a5d;
   --cell-on-high: #ffffff;
-  --cell-on-mid: #17212b;
+  --cell-on-mid: #1f1c1a;
   --cell-on-low: #ffffff;
 
-  --radius-lg: 8px;
-  --radius: 6px;
-  --radius-sm: 4px;
+  --font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+
+  --radius-lg: 2px;
+  --radius: 2px;
+  --radius-sm: 2px;
   --shadow: none;
   --ease: cubic-bezier(0.2, 0, 0, 1);
 
@@ -56,42 +60,9 @@
   --s5: 24px;
   --s6: 32px;
   --s7: 48px;
+  --s8: 80px;
 
-  color-scheme: light dark;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #11171d;
-    --surface: #18202a;
-    --surface-2: #1f2934;
-    --text: #e7ecf0;
-    --muted: #9ba8b4;
-    --border: #2b3743;
-    --border-strong: #41505f;
-
-    --primary: #f5c400;
-    --primary-hover: #ffd633;
-    --primary-soft: #2a2a17;
-    --on-primary: #17212b;
-    --ring: #f5c400;
-
-    --error: #ff9b8f;
-    --high: #ff9b8f;
-    --high-bg: #3a1d1a;
-    --mid: #ffc56b;
-    --mid-bg: #3a2a12;
-    --low: #8fd5a8;
-    --low-bg: #16301f;
-
-    --cell-high: #c4362a;
-    --cell-mid: #d98c22;
-    --cell-low: #2f7d51;
-    --cell-on-mid: #11171d;
-
-    --band: #0b1015;
-    --band-line: #26323d;
-  }
+  color-scheme: dark;
 }
 
 /* ---- 기본 ---- */
@@ -108,7 +79,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: "IBM Plex Sans KR", system-ui, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  font-family: var(--font);
   font-size: 16px;
   line-height: 1.65;
   word-break: keep-all;
@@ -1130,7 +1101,7 @@ button.link {
   margin-top: 3px;
 }
 
-@media (max-width: 720px) {
+@media screen and (max-width: 720px) {
   .paper {
     padding: var(--s5) var(--s4);
   }
@@ -1701,6 +1672,339 @@ button.matrix-cell[aria-pressed="true"] {
 
 /* ---- 인쇄: 평가표 서식만 ---- */
 
+/* ================================================================
+   반장노트 테마: 제목·버튼·입력·서식·바닥글
+   (앞의 규칙과 같은 선택자를 뒤에서 덮어쓴다. 인쇄 규칙보다 앞에 둔다)
+   ================================================================ */
+
+/* 제목 위계: 큰 제목 700, 섹션 제목 700, 작은 제목 600. 본문은 400 */
+h1,
+h2,
+h3,
+.band-title,
+.band-headline {
+  font-family: var(--font);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.form-title,
+.matrix-title {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.form-title {
+  font-size: 1.1rem;
+}
+
+.matrix-title {
+  font-size: 1rem;
+}
+
+/* 상단 바: 로고(수첩)와 이름 */
+.app-header {
+  background: color-mix(in srgb, var(--band) 94%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+.app-header-inner {
+  min-height: 72px;
+}
+
+.brand {
+  gap: 12px;
+  font-weight: 400;
+}
+
+.brand-mark {
+  width: 24px;
+  height: 28px;
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 1.2;
+}
+
+.brand-text {
+  display: grid;
+  line-height: 1.15;
+}
+
+.brand-name {
+  font-family: var(--font);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.brand-sub {
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--on-band-muted);
+}
+
+.app-header .tag {
+  color: var(--primary);
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--primary) 60%, transparent);
+}
+
+/* 위쪽 띠: 넓은 여백과 굵은 큰 제목 */
+.band {
+  border-bottom: 1px solid var(--band-line);
+}
+
+.band-inner {
+  padding-top: var(--s7);
+  padding-bottom: var(--s7);
+}
+
+.band-title {
+  margin-bottom: var(--s4);
+  font-size: clamp(1.9rem, 1.3rem + 2.1vw, 2.9rem);
+  line-height: 1.28;
+}
+
+.band-headline {
+  font-size: clamp(1.55rem, 1.15rem + 1.5vw, 2.25rem);
+  line-height: 1.28;
+}
+
+.band-detail {
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.75;
+}
+
+.band-arrow {
+  font-weight: 400;
+  color: var(--primary);
+}
+
+.band-key {
+  border-color: var(--band-line);
+}
+
+/* 띠 안의 입력칸: 카드 대신 가는 테두리 상자 (예약 바처럼) */
+.band .form.card {
+  background: transparent;
+  border-color: var(--band-line);
+}
+
+/* 버튼: 주 버튼은 놋쇠색 사각, 보조 버튼은 가는 테두리 알약 */
+button.primary,
+.form button.primary {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border-radius: 2px;
+}
+
+button.ghost {
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--text);
+  background: transparent;
+  border-color: var(--border-strong);
+  border-radius: 999px;
+  padding-left: 18px;
+  padding-right: 18px;
+}
+
+button.ghost:hover:not(:disabled) {
+  color: var(--primary-hover);
+  background: transparent;
+  border-color: var(--primary);
+}
+
+.app-header button.ghost:hover:not(:disabled),
+.desc-bar button.ghost:hover:not(:disabled) {
+  color: var(--primary-hover);
+  background: transparent;
+  border-color: var(--primary);
+}
+
+button.link {
+  color: var(--primary-hover);
+}
+
+/* 만드는 방식: 알약 모양, 고른 쪽은 놋쇠 테두리 */
+.option-group {
+  background: transparent;
+  border-color: var(--border);
+  border-radius: 999px;
+}
+
+.option-group label {
+  border-radius: 999px;
+}
+
+.option-group label.selected {
+  color: var(--primary-hover);
+  font-weight: 700;
+  background: transparent;
+  box-shadow: 0 0 0 1px var(--primary);
+}
+
+.form textarea {
+  background: color-mix(in srgb, var(--bg) 60%, transparent);
+  border-color: var(--border-strong);
+}
+
+.form textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+}
+
+/* 매트릭스: 칸 사이를 조금 띄우고 선택한 칸은 놋쇠 테두리 */
+button.matrix-cell[aria-pressed="true"] {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* 섹션 제목: 굵게 + 아래 가는 선 */
+.history h2,
+.panel h2 {
+  font-size: 1.45rem;
+  padding-bottom: var(--s3);
+  border-bottom: 1px solid var(--border);
+}
+
+/* 평가표 서식: 어두운 바탕 위 상아색 종이. 안쪽은 밝은 서식용 색으로 다시 정한다 */
+.paper {
+  --surface: #f6f1e7;
+  --surface-2: #ece5d7;
+  --text: #26221e;
+  --muted: #5f574d;
+  --border: #d6cdbd;
+  --border-strong: #b3a894;
+  --primary: #26221e;
+  --primary-hover: #3b352f;
+  --on-primary: #f6f1e7;
+  --ring: #8a6a32;
+  --error: #a3261d;
+  --high: #a3261d;
+  --high-bg: #f6dfda;
+  --mid: #8a4a07;
+  --mid-bg: #f7e7cf;
+  --low: #2c6640;
+  --low-bg: #e0eedf;
+  color: var(--text);
+  background: var(--surface);
+  border: none;
+  box-shadow: 0 30px 60px -30px rgb(0 0 0 / 0.6);
+}
+
+.paper .doc-head h2 {
+  font-family: var(--font);
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+/* ---- 바닥글: 큰 글자 띠와 안내 ---- */
+
+.site-foot {
+  margin-top: var(--s5);
+  background: var(--band);
+  border-top: 1px solid var(--band-line);
+  overflow: hidden;
+}
+
+.marquee {
+  padding: var(--s6) 0 var(--s5);
+  border-bottom: 1px solid var(--band-line);
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee 48s linear infinite;
+}
+
+.marquee-set {
+  display: flex;
+  flex: none;
+  align-items: baseline;
+}
+
+.marquee-set > span {
+  padding-right: 0.5em;
+  font-family: var(--font);
+  font-size: clamp(3rem, 1.8rem + 6vw, 7rem);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--text) 18%, transparent);
+}
+
+.marquee-set > .marquee-alt {
+  color: color-mix(in srgb, var(--primary) 85%, transparent);
+}
+
+/* 좁은 화면: 방식 버튼 글자가 두 줄이 되면 알약 대신 각진 상자로 */
+@media (max-width: 520px) {
+  .option-group,
+  .option-group label {
+    border-radius: 2px;
+  }
+
+  .option-group label {
+    white-space: normal;
+    text-align: center;
+  }
+}
+
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.foot-inner {
+  display: grid;
+  gap: var(--s4) var(--s7);
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: var(--s6) var(--s4) var(--s7);
+}
+
+@media (min-width: 800px) {
+  .foot-inner {
+    grid-template-columns: auto minmax(0, 60ch);
+  }
+}
+
+.foot-brand {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--primary);
+}
+
+.foot-text p {
+  margin: 0 0 var(--s2);
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.75;
+  color: var(--muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
+}
+
+/* 인쇄: A4 세로, 여백 12mm */
+@page {
+  size: A4;
+  margin: 12mm;
+}
+
 @media print {
   :root {
     color-scheme: light;
@@ -1712,6 +2016,7 @@ button.matrix-cell[aria-pressed="true"] {
 
   .app-header,
   .band,
+  .site-foot,
   .panels,
   .doc-notes,
   .doc-actions,
@@ -1725,8 +2030,10 @@ button.matrix-cell[aria-pressed="true"] {
     padding: 0;
   }
 
+  /* 표 오른쪽 선과 기울인 검사 도장이 종이 끝에서 잘리지 않게 오른쪽에 조금 여유 */
   .paper {
-    padding: 0;
+    padding: 0 6px 0 1px;
+    background: #fff;
     border: none;
     box-shadow: none;
   }

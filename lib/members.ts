@@ -75,7 +75,7 @@ export async function sendInvite(
     payload: { name },
     subject: `${companyName} 직원 초대`,
     intro: [
-      `${name}님, ${inviter}님이 '${companyName}'의 위험성평가 도우미에 초대했어요.`,
+      `${name}님, ${inviter}님이 '${companyName}'의 반장노트에 초대했어요.`,
       "",
       `사이트에서 '초대받았어요'를 누르고 이 이메일(${email})과 아래 인증번호를 넣은 뒤 비밀번호를 정하면 가입돼요.`,
     ].join("\n"),

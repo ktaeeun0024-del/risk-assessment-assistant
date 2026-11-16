@@ -6,7 +6,7 @@
 import nodemailer, { type Transporter } from "nodemailer";
 import { AuthError } from "./auth";
 
-const SITE_NAME = "위험성평가 도우미";
+const SITE_NAME = "반장노트";
 
 let transporter: Transporter | null = null;
 

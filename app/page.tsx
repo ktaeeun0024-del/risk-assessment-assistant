@@ -234,12 +234,17 @@ export default function Home() {
     <>
       <header className="app-header">
         <div className="app-header-inner">
-          <a className="brand" href="/">
-            <svg className="brand-mark" viewBox="0 0 32 28" aria-hidden="true" focusable="false">
-              <path d="M16 1.5 31 26.5H1z" />
-              <path className="brand-mark-ink" d="M14.6 9.5h2.8l-.5 9.2h-1.8zM16 20.6a1.6 1.6 0 1 1 0 3.2 1.6 1.6 0 0 1 0-3.2z" />
+          <a className="brand" href="/" aria-label="반장노트 처음 화면">
+            {/* 로고: 가는 선으로 그린 수첩 (반장이 들고 다니는 작업 노트) */}
+            <svg className="brand-mark" viewBox="0 0 28 32" aria-hidden="true" focusable="false">
+              <rect x="4.5" y="1.5" width="20" height="29" rx="1" />
+              <path d="M9 1.5v29M13 9h8M13 13.5h8M13 18h5" />
+              <path d="M1.5 7h5M1.5 13h5M1.5 19h5M1.5 25h5" />
             </svg>
-            위험성평가 도우미
+            <span className="brand-text">
+              <span className="brand-name">반장노트</span>
+              <span className="brand-sub">위험성평가 도우미</span>
+            </span>
           </a>
           <nav className="account" aria-label="계정">
             {me ? (
@@ -382,6 +387,33 @@ export default function Home() {
           </section>
         )}
       </main>
+
+      <footer className="site-foot">
+        {/* 큰 글자 띠: 페이지에서 유일하게 움직이는 장식. 움직임 줄이기 설정이면 멈춘다 */}
+        <div className="marquee" aria-hidden="true">
+          <div className="marquee-track">
+            {[0, 1].map((n) => (
+              <span key={n} className="marquee-set">
+                <span>반장노트</span>
+                <span className="marquee-alt">Banjang Note</span>
+                <span>반장노트</span>
+                <span className="marquee-alt">Banjang Note</span>
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="foot-inner">
+          <p className="foot-brand">반장노트</p>
+          <div className="foot-text">
+            <p>작업을 말로 설명하면 위험성평가표 초안을 만들어 드려요. 초안은 코드가 한 번 더 검사합니다.</p>
+            <p>
+              참고 자료: 한국가스공사 위험성평가 표준모델(공공데이터포털). 위험성 판단은 고용노동부 「사업장 위험성평가에 관한
+              지침」의 3×3 빈도·강도법을 따릅니다.
+            </p>
+            <p>반장노트가 만드는 것은 초안입니다. 위험성평가의 최종 판단과 책임은 사업주에게 있어요.</p>
+          </div>
+        </div>
+      </footer>
     </>
   );
 }

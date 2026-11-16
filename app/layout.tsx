@@ -2,15 +2,12 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "위험성평가 도우미",
-  description: "작업 내용을 말로 설명하면 위험성평가표 초안을 만들고, 코드가 다시 검사합니다.",
+  title: "반장노트",
+  description: "작업 내용을 말로 설명하면 위험성평가표 초안을 만들고, 코드가 다시 검사합니다. 소규모 공장을 위한 위험성평가 도우미.",
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#e8ebe8" },
-    { media: "(prefers-color-scheme: dark)", color: "#11171d" },
-  ],
+  themeColor: "#1f1c1a",
 };
 
 export default function RootLayout({
@@ -21,12 +18,12 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <head>
-        {/* IBM Plex Sans KR: 기술 문서·서식에 어울리는 한글 글꼴 */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* Pretendard (가변 굵기, 화면에 쓰인 글자만 나눠 받는 dynamic subset 판) */}
+        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap"
+          crossOrigin="anonymous"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
         />
       </head>
       <body>{children}</body>
