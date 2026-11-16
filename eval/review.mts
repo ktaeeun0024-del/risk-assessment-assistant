@@ -35,7 +35,7 @@ const args = process.argv.slice(2);
 const applyMode = args.includes("--apply");
 const casesArg = args.indexOf("--cases");
 const only = casesArg >= 0 ? new Set(args[casesArg + 1]?.split(",").map((x) => x.trim())) : null;
-const file = args.find((a, i) => !a.startsWith("--") && i !== casesArg + 1);
+const file = args.find((a, i) => !a.startsWith("--") && !(casesArg >= 0 && i === casesArg + 1));
 if (!file || !existsSync(file)) {
   console.error("사용법: npm run eval:review -- eval/results/<측정결과>.json [--cases E01,E02]  |  --apply <판정지>.review.json");
   process.exit(1);
