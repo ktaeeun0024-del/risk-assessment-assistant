@@ -16,6 +16,7 @@ import type { HistoryItem } from "@/lib/history";
 import { AuthPanel, MembersPanel, PasswordPanel, postJson, ROLE_NAMES, SiteAdminPanel, type Me } from "./account";
 import { AlertIcon, CheckCircleIcon, DownloadIcon, InfoIcon, LockIcon, PrinterIcon, SearchIcon, SparkIcon } from "./icons";
 import { cellOf, MatrixGrid, MatrixLegend, summarize, type Cell } from "./matrix";
+import { SafetySummary } from "./safety-summary";
 
 const LEVEL_CLASS: Record<RiskLevel, string> = { 높음: "high", 보통: "mid", 낮음: "low" };
 
@@ -596,6 +597,8 @@ function ResultView({ result, me, cell, onClear }: { result: AssessResponse; me:
           {result.mode === "search" && " 표준모델 검색 초안의 가능성·중대성은 규칙으로 정한 기본값입니다."}
         </p>
       </article>
+
+      <SafetySummary assessment={result.assessment} signedIn={!!me && !me.mustChangePassword} />
     </section>
   );
 }

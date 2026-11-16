@@ -145,7 +145,7 @@ var DraftError = class extends Error {
   }
   status;
 };
-async function callOpenRouter(apiKey, messages, timeoutMs = TIMEOUT_MS) {
+async function callOpenRouter(apiKey, messages, timeoutMs = TIMEOUT_MS, model = MODEL, reasoning) {
   let res;
   try {
     res = await fetch(OPENROUTER_URL, {
@@ -155,7 +155,7 @@ async function callOpenRouter(apiKey, messages, timeoutMs = TIMEOUT_MS) {
         "Content-Type": "application/json",
         "X-Title": "risk-assessment-assistant"
       },
-      body: JSON.stringify({ model: MODEL, messages, temperature: 0.2 }),
+      body: JSON.stringify({ model, messages, temperature: 0.2, ...reasoning ? { reasoning } : {} }),
       signal: AbortSignal.timeout(timeoutMs)
     });
   } catch (err) {
@@ -173,7 +173,7 @@ async function callOpenRouter(apiKey, messages, timeoutMs = TIMEOUT_MS) {
   const data = await res.json().catch(() => null);
   return {
     content: String(data?.choices?.[0]?.message?.content ?? ""),
-    model: String(data?.model ?? MODEL)
+    model: String(data?.model ?? model)
   };
 }
 var toScore = (v) => {
@@ -270,6 +270,119 @@ ${report.errors.map((e) => `- ${e}`).join("\n")}`
   return { assessment, report, model: lastModel, attempts };
 }
 
+// lib/safety-summary.ts
+var LANGUAGES = {
+  vi: { name: "베트남어", native: "Tiếng Việt" },
+  km: { name: "크메르어 (캄보디아)", native: "ភាសាខ្មែរ" },
+  ne: { name: "네팔어", native: "नेपाली" },
+  id: { name: "인도네시아어", native: "Bahasa Indonesia" },
+  my: { name: "미얀마어", native: "မြန်မာဘာသာ" },
+  uz: { name: "우즈베크어", native: "Oʻzbekcha" },
+  en: { name: "영어", native: "English" }
+};
+
+// lib/translate.ts
+var BACK_OVERLAP_MIN = 0.3;
+var MODEL2 = process.env.OPENROUTER_MODEL?.trim() || DEFAULT_MODEL;
+var NO_THINKING = { enabled: false };
+var JSON_SHAPE = '{"title":"...","lines":[{"risk":"...","todo":"..."}]}';
+function parsePairs(content) {
+  const start = content.indexOf("{");
+  const end = content.lastIndexOf("}");
+  if (start === -1 || end <= start) return null;
+  try {
+    const data = JSON.parse(content.slice(start, end + 1));
+    if (!Array.isArray(data.lines)) return null;
+    const lines = data.lines.map((l) => {
+      const r = l ?? {};
+      return { risk: String(r.risk ?? "").trim(), todo: String(r.todo ?? "").trim() };
+    });
+    return { title: String(data.title ?? "").trim(), lines };
+  } catch {
+    return null;
+  }
+}
+function bigrams(text) {
+  const out = /* @__PURE__ */ new Set();
+  for (const word of text.match(/[가-힣A-Za-z0-9]+/g) ?? []) {
+    const ch = Array.from(word);
+    for (let i = 0; i < ch.length - 1; i++) out.add(ch[i] + ch[i + 1]);
+  }
+  return out;
+}
+function overlap(a, b) {
+  const A = bigrams(a);
+  const B = bigrams(b);
+  if (!A.size || !B.size) return 0;
+  let inter = 0;
+  for (const t of A) if (B.has(t)) inter++;
+  return inter / Math.min(A.size, B.size);
+}
+var HANGUL = /[가-힣]/;
+var timeLeft = (deadline) => deadline ? Math.max(deadline - Date.now(), 1e3) : 12e4;
+async function translateLines(apiKey, source, lang, opts = {}) {
+  const target = LANGUAGES[lang];
+  const messages = [
+    {
+      role: "system",
+      content: `너는 한국 공장에서 일하는 외국인 근로자에게 안전 안내문을 옮기는 번역가야. ${target.name}(${target.native})로 옮겨.
+- 한국어를 잘 모르는 사람이 읽는다. 쉬운 단어와 짧은 문장으로 쓴다.
+- 뜻을 더하거나 빼지 마. 기계·물질 이름은 그 언어에서 흔히 쓰는 말로, 없으면 소리 나는 대로 쓴다.
+- 숫자와 단위는 그대로 둔다. 한글을 남기지 마.
+- 다른 말 없이 같은 형태의 JSON 하나만 답해: ${JSON_SHAPE} (줄 수와 순서는 그대로)`
+    },
+    { role: "user", content: JSON.stringify({ title: source.title, lines: source.lines.map(({ risk, todo }) => ({ risk, todo })) }) }
+  ];
+  const res = await callOpenRouter(apiKey, messages, timeLeft(opts.deadline), MODEL2, NO_THINKING);
+  const parsed = parsePairs(res.content);
+  if (!parsed || parsed.lines.length !== source.lines.length) {
+    throw new DraftError("번역 답의 형식이 올바르지 않아요. 다시 옮겨 보세요.", 502);
+  }
+  return { lang, title: parsed.title || source.title, lines: parsed.lines, model: res.model };
+}
+async function backCheck(apiKey, source, translated, opts = {}) {
+  const target = LANGUAGES[translated.lang];
+  const messages = [
+    {
+      role: "system",
+      content: `아래 ${target.name} 안전 안내문을 한국어로 직역해. 뜻을 고치거나 보태지 말고 쓰인 그대로 옮겨.
+다른 말 없이 같은 형태의 JSON 하나만 답해: ${JSON_SHAPE} (줄 수와 순서는 그대로)`
+    },
+    { role: "user", content: JSON.stringify({ title: translated.title, lines: translated.lines }) }
+  ];
+  const res = await callOpenRouter(apiKey, messages, timeLeft(opts.deadline), MODEL2, NO_THINKING);
+  const back = parsePairs(res.content);
+  if (!back || back.lines.length !== source.lines.length) {
+    throw new DraftError("역번역 답의 형식이 올바르지 않아요. 다시 검사해 보세요.", 502);
+  }
+  const lines = source.lines.map((src, i) => {
+    const t = translated.lines[i];
+    const b = back.lines[i];
+    const ov = Math.min(overlap(src.risk, b.risk), overlap(src.todo, b.todo));
+    const notes = [];
+    if (!t.risk || !t.todo) notes.push("번역이 비어 있어요");
+    if (translated.lang !== "en" && (HANGUL.test(t.risk) || HANGUL.test(t.todo))) notes.push("번역문에 한글이 남아 있어요");
+    if (ov < BACK_OVERLAP_MIN) notes.push("다시 한국어로 옮긴 뜻이 원문과 많이 달라요");
+    return {
+      risk: t.risk,
+      todo: t.todo,
+      backRisk: b.risk,
+      backTodo: b.todo,
+      overlap: Math.round(ov * 100) / 100,
+      ok: notes.length === 0,
+      ...notes.length ? { note: notes.join(", ") } : {}
+    };
+  });
+  return {
+    lang: translated.lang,
+    title: translated.title,
+    source,
+    lines,
+    ok: lines.every((l) => l.ok),
+    model: res.model
+  };
+}
+
 // supabase/functions/ai-draft/source.ts
 var AI_BUDGET_MS = 135e3;
 var sql = postgres(Deno.env.get("SUPABASE_DB_URL"), { prepare: false, max: 2 });
@@ -278,12 +391,14 @@ async function sha256Hex(text) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
-async function run(jobId, apiKey, description, reference) {
+async function run(jobId, apiKey, job) {
   try {
-    const ai = await aiDraft(apiKey, description, reference, { deadline: Date.now() + AI_BUDGET_MS });
-    await sql`UPDATE ai_jobs SET status = 'done', result = ${sql.json(ai)}, finished_at = now() WHERE id = ${jobId}`;
+    const deadline = Date.now() + AI_BUDGET_MS;
+    const p = job.payload;
+    const result = p?.step === "translate" ? await translateLines(apiKey, p.source, p.lang, { deadline }) : p?.step === "backcheck" ? await backCheck(apiKey, p.source, p.translated, { deadline }) : await aiDraft(apiKey, job.description, job.reference, { deadline });
+    await sql`UPDATE ai_jobs SET status = 'done', result = ${sql.json(result)}, finished_at = now() WHERE id = ${jobId}`;
   } catch (err) {
-    const reason = err instanceof DraftError ? err.message : "AI 초안을 만들지 못했어요.";
+    const reason = err instanceof DraftError ? err.message : "AI 작업을 마치지 못했어요.";
     if (!(err instanceof DraftError)) console.error("[ai-draft] 알 수 없는 오류");
     await sql`UPDATE ai_jobs SET status = 'failed', error = ${reason}, finished_at = now() WHERE id = ${jobId}`.catch(
       () => console.error("[ai-draft] 실패 기록 저장 실패")
@@ -301,8 +416,8 @@ Deno.serve(async (req) => {
   const rows = await sql`
     UPDATE ai_jobs SET status = 'running', started_at = now()
      WHERE id = ${jobId} AND token_hash = ${await sha256Hex(token)} AND status = 'queued'
-     RETURNING description, reference`;
+     RETURNING kind, description, reference, payload`;
   if (!rows.length) return json({ error: "없는 작업" }, 404);
-  EdgeRuntime.waitUntil(run(jobId, apiKey, rows[0].description, rows[0].reference));
+  EdgeRuntime.waitUntil(run(jobId, apiKey, rows[0]));
   return json({ accepted: true }, 202);
 });

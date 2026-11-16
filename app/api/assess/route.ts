@@ -85,7 +85,12 @@ export async function POST(request: Request) {
   // 배포 사이트: AI는 뒤에서 만들고 화면은 jobId로 결과를 확인한다
   if (mode === "ai" && user && jobsEnabled() && process.env.OPENROUTER_API_KEY) {
     try {
-      const pending = await startJob(user, description, referenceText(searched.sources, searched.assessment), searchResult());
+      const pending = await startJob(user, {
+        kind: "draft",
+        description,
+        reference: referenceText(searched.sources, searched.assessment),
+        fallback: searchResult(),
+      });
       return NextResponse.json(pending, { status: 202 });
     } catch (err) {
       console.error(`[assess] AI 작업 저장 실패: ${dbErrorCode(err)}`);

@@ -1,4 +1,4 @@
-// Supabase Edge Function: AI 초안을 뒤에서(백그라운드로) 만든다.
+// Supabase Edge Function: AI 작업(평가표 초안, 외국인 근로자용 번역)을 뒤에서(백그라운드로) 만든다.
 //
 // 왜: Netlify 무료 서버 함수는 약 10초 안에 끝나야 하는데, 무료 AI는 평가표 하나에 60~90초가 걸린다.
 // Supabase 무료 Edge Function은 최대 150초까지 돌 수 있다 (supabase.com/docs/guides/functions/limits).
@@ -13,6 +13,8 @@
 // OpenRouter 키는 Supabase 비밀값(OPENROUTER_API_KEY)이 있으면 그것을, 없으면 Netlify가 보낸 머리글을 쓴다.
 import postgres from "npm:postgres@3.4.5";
 import { aiDraft, DraftError } from "../../../lib/ai";
+import { backCheck, translateLines } from "../../../lib/translate";
+import type { TranslatePayload } from "../../../lib/ai-jobs";
 
 declare const Deno: { env: { get(name: string): string | undefined }; serve(h: (req: Request) => Promise<Response>): void };
 declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void };
@@ -30,12 +32,21 @@ async function sha256Hex(text: string): Promise<string> {
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-async function run(jobId: string, apiKey: string, description: string, reference: string) {
+type Job = { kind: string; description: string; reference: string; payload: TranslatePayload | null };
+
+async function run(jobId: string, apiKey: string, job: Job) {
   try {
-    const ai = await aiDraft(apiKey, description, reference, { deadline: Date.now() + AI_BUDGET_MS });
-    await sql`UPDATE ai_jobs SET status = 'done', result = ${sql.json(ai)}, finished_at = now() WHERE id = ${jobId}`;
+    const deadline = Date.now() + AI_BUDGET_MS;
+    const p = job.payload;
+    const result =
+      p?.step === "translate"
+        ? await translateLines(apiKey, p.source, p.lang, { deadline })
+        : p?.step === "backcheck"
+          ? await backCheck(apiKey, p.source, p.translated, { deadline })
+          : await aiDraft(apiKey, job.description, job.reference, { deadline });
+    await sql`UPDATE ai_jobs SET status = 'done', result = ${sql.json(result)}, finished_at = now() WHERE id = ${jobId}`;
   } catch (err) {
-    const reason = err instanceof DraftError ? err.message : "AI 초안을 만들지 못했어요.";
+    const reason = err instanceof DraftError ? err.message : "AI 작업을 마치지 못했어요.";
     if (!(err instanceof DraftError)) console.error("[ai-draft] 알 수 없는 오류");
     await sql`UPDATE ai_jobs SET status = 'failed', error = ${reason}, finished_at = now() WHERE id = ${jobId}`.catch(
       () => console.error("[ai-draft] 실패 기록 저장 실패"),
@@ -56,9 +67,9 @@ Deno.serve(async (req) => {
   const rows = await sql`
     UPDATE ai_jobs SET status = 'running', started_at = now()
      WHERE id = ${jobId} AND token_hash = ${await sha256Hex(token)} AND status = 'queued'
-     RETURNING description, reference`;
+     RETURNING kind, description, reference, payload`;
   if (!rows.length) return json({ error: "없는 작업" }, 404);
 
-  EdgeRuntime.waitUntil(run(jobId, apiKey, rows[0].description, rows[0].reference));
+  EdgeRuntime.waitUntil(run(jobId, apiKey, rows[0] as unknown as Job));
   return json({ accepted: true }, 202);
 });

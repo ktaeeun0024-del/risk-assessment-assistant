@@ -18,6 +18,9 @@
 - AI 답이 JSON 형식에 맞지 않으면 한 번 다시 요청하고, 검사 오류가 있으면 오류 목록을 보내 한 번 고쳐 쓰게 합니다.
 - AI가 실패하면(키 없음, 요청 한도, 시간 초과 등) 표준모델 검색 초안을 대신 보여 주고 이유를 안내합니다.
 - 위험성은 낮음·보통·높음 색으로 표시하고, CSV(엑셀용)로 내려받을 수 있습니다.
+- **외국인 근로자용 안전 요약** (로그인 필요): 위험성이 높은 항목부터 6개를 코드가 쉬운 한국어로 정리하고, AI가 베트남어·크메르어·네팔어·인도네시아어·미얀마어·우즈베크어·영어로 옮깁니다. 옮긴 글은 AI가 다시 한국어로 되돌리고(역번역) 코드가 원문과 비교해, 뜻이 달라졌거나 한글이 남은 줄은 '확인 필요'로 표시합니다. 요약만 따로 인쇄할 수 있습니다.
+  - 번역과 역번역 검사는 두 단계로 나눠 부릅니다(배포 사이트에서 단계마다 Supabase 함수 시간을 따로 씀). 번역에는 모델의 생각(reasoning)을 꺼서 빠르게 합니다.
+  - 시험(11/16): 베트남어 번역 8초 + 검사 20초, 6줄 중 4줄 통과. 크메르어 54초 + 12초, 6줄 중 5줄을 '확인 필요'로 걸러냄 → 언어에 따라 AI 번역 품질 차이가 크므로 꼭 확인 표시를 보고 나눠 줍니다.
 - **회사별 계정과 기록**
   - **회사 가입**: 회사 이름·사업자등록번호·이름·이메일·비밀번호를 넣으면 이메일로 6자리 인증번호가 갑니다. 인증하면 회사가 **승인 대기**로 만들어지고 가입한 사람이 회사 관리자가 됩니다. 사업자등록번호는 검증 숫자로 오타를 거르고, 국세청 사업자등록 상태(계속·휴업·폐업)를 조회해 함께 저장합니다.
   - **사이트 관리자 승인**: `SITE_ADMIN_EMAILS`의 이메일로 로그인하면 '가입 승인' 화면에서 신청 회사의 사업자등록번호·국세청 조회 결과·신청자를 보고 승인·거절합니다. 신청이 들어오면 사이트 관리자에게, 승인·거절하면 신청자에게 메일이 갑니다. 승인 전에는 로그인할 수 없습니다. 사이트 관리자 본인의 이메일로 가입하면 바로 승인됩니다.
@@ -27,11 +30,12 @@
   - 로그인하면 만든 평가표가 **우리 회사 기록**에 저장되고, 같은 회사 계정끼리만 볼 수 있습니다. 회사는 서버가 로그인 세션으로만 정합니다(요청에 회사 번호를 받지 않음).
   - 로그인 없이도 표준모델 검색 초안은 써 볼 수 있습니다. AI 초안과 기록 저장은 로그인한 계정만 쓸 수 있습니다(무료 AI 하루 사용량 보호).
 - **보안**: 비밀번호는 scrypt로 암호화해 저장, 로그인 상태는 HttpOnly 쿠키(DB에는 토큰의 해시만 저장, 7일), 같은 이메일로 5번 틀리면 10분 잠금, 다른 사이트에서 온 요청(Origin 불일치) 거절. 모든 테이블에 RLS를 켜서 Supabase 공개 API로는 읽을 수 없게 했습니다.
-- 테이블(`companies`, `users`, `sessions`, `assessment_history`, `email_codes`, `ai_jobs`)과 RLS 설정은 앱이 처음 DB를 쓸 때 자동으로 만들어집니다. DB에 연결하지 못해도 검색 초안 만들기는 동작하고 로그인 기능만 숨겨집니다.
+- 테이블(`companies`, `users`, `sessions`, `assessment_history`, `email_codes`, `ai_jobs`(평가표 초안·번역·역번역 검사 작업))과 RLS 설정은 앱이 처음 DB를 쓸 때 자동으로 만들어집니다. DB에 연결하지 못해도 검색 초안 만들기는 동작하고 로그인 기능만 숨겨집니다.
 - API
   - `POST /api/assess` — `{ "description": "...", "mode": "ai" | "search" }` → `{ assessment, report, mode, model, attempts, sources?, fallback?, notice?, saved? }`
     - 배포 사이트(`AI_JOB_URL` 있음)의 AI 모드는 `202 { pending: true, jobId }`를 바로 돌려줍니다.
   - `GET /api/assess?job=<jobId>` — AI 작업 결과 확인 (로그인 필요, 우리 회사 작업만). 작성 중이면 `202 { pending: true, jobId }`, 끝나면 위와 같은 평가표 (실패하면 검색 초안으로 대체)
+  - `POST /api/translate` — `{ assessment, lang }` → 1단계 번역, `{ assessment, step: "check", translated }` → 2단계 역번역 검사. 배포 사이트에서는 `202 { pending, jobId }` 후 `GET /api/translate?job=…&step=translate|check`로 확인 (로그인 필요)
   - `GET /api/history` — 우리 회사 기록 최근 20개 (로그인 필요)
   - `POST /api/auth/register` → `register/verify` (회사 가입), `invite` (초대 수락), `reset` → `reset/verify` (비밀번호 찾기), `login` · `logout` · `password`, `GET /api/auth/me`
   - `GET·POST /api/company/members` (직원 목록·초대), `POST /api/company/invites` (초대 다시 보내기·취소), `POST /api/company/members/remove` (회사 관리자)
@@ -96,7 +100,10 @@ lib/schema.ts             평가표 형식, KRAS 6분류, 3x3 위험성 등급, 
 lib/validator.ts          평가표 검사기
 lib/retrieve.ts           표준모델 검색 초안 (BM25, src/retrieve_draft.py와 같은 결과)
 lib/ai.ts                 OpenRouter 무료 모델 호출, JSON 파싱, 검사 오류 수정 요청 (마감 시각을 넘기지 않게 재요청 조절)
-lib/ai-jobs.ts            배포 사이트의 AI 작업: ai_jobs에 적고 Edge Function 호출 → 결과 확인·기록 저장
+lib/ai-jobs.ts            배포 사이트의 AI 작업(초안·번역·역번역 검사): ai_jobs에 적고 Edge Function 호출 → 결과 확인·기록 저장
+lib/safety-summary.ts     외국인 근로자용 쉬운 한국어 요약(코드가 만듦), 언어 목록
+lib/translate.ts          번역(1단계)과 역번역 검사(2단계)
+app/safety-summary.tsx    안전 요약 화면 (언어 선택, 번역, 검사 표시, 요약 인쇄)
 supabase/functions/ai-draft/  Supabase Edge Function (source.ts 원본 → npm run build:edge → index.js 배포)
 eval/                     검증 측정 (검증 세트 20종, 재현율 채점, 사람 판정)
 lib/db.ts                 PostgreSQL 접속, 테이블·RLS 자동 생성

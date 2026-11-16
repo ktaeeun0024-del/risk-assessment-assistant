@@ -99,6 +99,9 @@ const SCHEMA = `
     finished_at timestamptz
   );
   CREATE INDEX IF NOT EXISTS ai_jobs_created_idx ON ai_jobs(created_at);
+  -- 작업 종류: draft(평가표 초안) / translate(외국인 근로자용 번역, payload에 언어와 쉬운 한국어 요약)
+  ALTER TABLE ai_jobs ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'draft';
+  ALTER TABLE ai_jobs ADD COLUMN IF NOT EXISTS payload jsonb;
 
   ALTER TABLE ai_jobs ENABLE ROW LEVEL SECURITY;
   ALTER TABLE email_codes ENABLE ROW LEVEL SECURITY;

@@ -44,7 +44,8 @@
   --cell-on-mid: #1f1c1a;
   --cell-on-low: #ffffff;
 
-  --font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  /* 크메르·미얀마·데바나가리(네팔어) 글자는 Pretendard에 없어 Noto Sans로 채운다 (쓰인 글자만 받음) */
+  --font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Noto Sans KR", "Noto Sans Khmer", "Noto Sans Myanmar", "Noto Sans Devanagari", sans-serif;
 
   --radius-lg: 2px;
   --radius: 2px;
@@ -1999,6 +2000,217 @@ button.matrix-cell[aria-pressed="true"] {
   }
 }
 
+/* ---- 외국인 근로자용 안전 요약 (AI ④) ---- */
+
+.safety-summary {
+  margin-top: var(--s7);
+}
+
+.summary-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--s4) var(--s6);
+  margin-bottom: var(--s4);
+}
+
+.summary-head h2 {
+  margin: 0 0 var(--s2);
+  font-size: 1.45rem;
+}
+
+.summary-head .hint {
+  max-width: 62ch;
+  margin: 0;
+}
+
+.summary-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--s3);
+}
+
+.lang-select {
+  display: grid;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.lang-select select {
+  min-height: 44px;
+  min-width: 240px;
+  padding: 8px 12px;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 2px;
+}
+
+.lang-select select:focus-visible {
+  border-color: var(--primary);
+}
+
+/* 요약 종이: 평가표와 같은 상아색 종이 */
+.summary-sheet {
+  --surface: #f6f1e7;
+  --text: #26221e;
+  --muted: #5f574d;
+  --border: #d6cdbd;
+  --border-strong: #b3a894;
+  --primary: #26221e;
+  --primary-hover: #3b352f;
+  --on-primary: #f6f1e7;
+  --high: #a3261d;
+  --mid: #8a4a07;
+  --low: #2c6640;
+  margin-top: var(--s4);
+  padding: var(--s5) var(--s6);
+  color: var(--text);
+  background: var(--surface);
+  box-shadow: 0 30px 60px -30px rgb(0 0 0 / 0.6);
+}
+
+.summary-sheet-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2) var(--s4);
+  padding-bottom: var(--s3);
+  border-bottom: 2px solid var(--text);
+}
+
+.summary-title {
+  flex: 1 1 260px;
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.summary-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.summary-check.pass {
+  color: var(--low);
+}
+
+.summary-check.fail {
+  color: var(--mid);
+}
+
+.summary-lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.summary-lines > li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--s3);
+  padding: var(--s4) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.summary-lines > li .risk-dot {
+  margin-top: 0.45em;
+}
+
+.summary-lines > li.needs-check {
+  box-shadow: inset 3px 0 0 var(--mid);
+  padding-left: var(--s3);
+}
+
+.summary-target .summary-risk {
+  margin: 0 0 4px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.summary-target .summary-todo {
+  margin: 0 0 var(--s2);
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.summary-ko p {
+  margin: 0 0 2px;
+  line-height: 1.6;
+}
+
+.summary-ko .summary-risk {
+  font-weight: 600;
+}
+
+.summary-ko.small p {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.summary-label {
+  display: inline-block;
+  min-width: 3.6em;
+  margin-right: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.summary-back {
+  margin-top: var(--s2);
+  font-size: 0.82rem;
+}
+
+.summary-back summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.needs-check .summary-back summary {
+  color: var(--mid);
+}
+
+.summary-back p {
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+
+.summary-foot {
+  margin: var(--s3) 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+@media screen and (max-width: 720px) {
+  .summary-sheet {
+    padding: var(--s4);
+  }
+
+  .lang-select select {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .summary-controls,
+  .lang-select {
+    width: 100%;
+  }
+}
+
 /* 인쇄: A4 세로, 여백 12mm */
 @page {
   size: A4;
@@ -2031,6 +2243,35 @@ button.matrix-cell[aria-pressed="true"] {
   }
 
   /* 표 오른쪽 선과 기울인 검사 도장이 종이 끝에서 잘리지 않게 오른쪽에 조금 여유 */
+  /* 평소 인쇄는 평가표만. '요약 인쇄하기'(body[data-print="summary"])는 요약 종이만 */
+  .safety-summary {
+    display: none;
+  }
+
+  body[data-print="summary"] .paper,
+  body[data-print="summary"] .summary-head,
+  body[data-print="summary"] .safety-summary > .hint,
+  body[data-print="summary"] .safety-summary > .error,
+  body[data-print="summary"] .summary-print,
+  body[data-print="summary"] .summary-back {
+    display: none !important;
+  }
+
+  body[data-print="summary"] .safety-summary {
+    display: block;
+    margin: 0;
+  }
+
+  body[data-print="summary"] .summary-sheet {
+    padding: 0 6px 0 1px;
+    background: #fff;
+    box-shadow: none;
+  }
+
+  .summary-lines > li {
+    break-inside: avoid;
+  }
+
   .paper {
     padding: 0 6px 0 1px;
     background: #fff;

@@ -57,7 +57,7 @@ const SYSTEM_PROMPT = `너는 50인 미만 제조 사업장의 위험성평가�
 const FORMAT_RETRY =
   '형식이 올바르지 않아. 다른 말 없이 {"작업명":"...","항목":[...]} 형태의 JSON 하나만 다시 답해.';
 
-type Message = { role: "system" | "user" | "assistant"; content: string };
+export type Message = { role: "system" | "user" | "assistant"; content: string };
 
 // 사람이 읽을 메시지와 HTTP 상태를 함께 담는 오류
 export class DraftError extends Error {
@@ -69,10 +69,14 @@ export class DraftError extends Error {
   }
 }
 
-async function callOpenRouter(
+// 번역(lib/translate.ts)에서도 쓴다
+export async function callOpenRouter(
   apiKey: string,
   messages: Message[],
   timeoutMs = TIMEOUT_MS,
+  model = MODEL,
+  // OpenRouter 생각(reasoning) 설정. 번역처럼 깊이 생각할 필요 없는 일은 줄여서 빠르게 한다
+  reasoning?: { effort?: "low" | "medium" | "high"; enabled?: boolean; exclude?: boolean },
 ): Promise<{ content: string; model: string }> {
   let res: Response;
   try {
@@ -83,7 +87,7 @@ async function callOpenRouter(
         "Content-Type": "application/json",
         "X-Title": "risk-assessment-assistant",
       },
-      body: JSON.stringify({ model: MODEL, messages, temperature: 0.2 }),
+      body: JSON.stringify({ model, messages, temperature: 0.2, ...(reasoning ? { reasoning } : {}) }),
       signal: AbortSignal.timeout(timeoutMs),
     });
   } catch (err) {
@@ -103,7 +107,7 @@ async function callOpenRouter(
   const data = await res.json().catch(() => null);
   return {
     content: String(data?.choices?.[0]?.message?.content ?? ""),
-    model: String(data?.model ?? MODEL),
+    model: String(data?.model ?? model),
   };
 }
 
