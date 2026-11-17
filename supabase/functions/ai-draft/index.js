@@ -97,6 +97,10 @@ function validate(assessment) {
     if (unknown.length > 0) {
       warnings.push(`${tag}: ${unknown.join(", ")}은(는) 표준모델에 없는 조항입니다. 실제 조문을 확인하세요`);
     }
+    const foreign = [it.세부작업, it.원인, it.유해위험요인, ...measures].join(" ").match(/[぀-ヿ一-鿿]/gu);
+    if (foreign) {
+      warnings.push(`${tag}: 한글이 아닌 글자(${[...new Set(foreign)].join("")})가 섞여 있습니다. 문장을 고쳐 주세요`);
+    }
     const key = `${it.세부작업}|${it.유해위험요인}`;
     if (seen.has(key)) warnings.push(`${tag}: 앞 항목과 중복됩니다`);
     seen.add(key);
@@ -113,10 +117,18 @@ var SYSTEM_PROMPT = `너는 50인 미만 제조 사업장의 위험성평가를 
 사용자는 안전 담당자가 없는 현장의 반장이나 사업주이고, 작업 내용을 말로 설명해.
 그 설명으로 안전보건공단 KRAS 양식의 위험성평가표 초안을 한국어로 작성해.
 
+가장 중요한 규칙
+- 작업 설명에 나온 기계·공구·물질·장소만 다뤄. 설명에 없는 기계·공구·물질은 위험요인에 쓰지 마.
+  예: 설명에 그라인더가 없으면 "그라인더 분진"을 쓰지 않는다. 고소작업대·사다리·약품도 설명에 있을 때만 쓴다.
+  약품 이름(세척제, 조류제거제 등)도 설명에 없으면 지어내지 마.
+  참고 자료에 나온 설비라도 설명에 없으면 쓰지 마.
+
 작성 방법
 1. 작업을 세부작업(준비, 본작업, 정리·운반 등)으로 나누고 세부작업마다 유해·위험요인을 찾아.
-2. 유해·위험요인은 "무엇 때문에 → 어떤 사고가 난다"가 드러나는 한 문장으로 써.
-   예: "프레스 금형 사이에 손을 넣은 상태에서 슬라이드가 내려와 손가락이 끼임"
+2. 유해·위험요인은 "무엇 때문에(대상과 원인) → 어떤 사고가 난다"가 드러나는 한 문장으로 써.
+   좋은 예: "프레스 금형 사이에 손을 넣은 상태에서 슬라이드가 내려와 손가락이 끼임"
+   나쁜 예: "화학물질 접촉·흡입으로 피부염, 중독 발생" (무엇을 하다가 어떻게 닿는지 없이 결과만 나열함)
+   한 문장에는 사고 하나만 써. 여러 사고를 쉼표로 늘어놓지 마.
 3. 분류는 다음 6가지 중 하나를 글자 그대로 써: ${CATEGORIES.join(", ")}
 4. 위험성은 3x3 빈도·강도법으로 판단해.
    - 가능성: ${Object.entries(LIKELIHOOD).map(([k, v]) => `${k}=${v}`).join("; ")}
@@ -132,10 +144,19 @@ var SYSTEM_PROMPT = `너는 50인 미만 제조 사업장의 위험성평가를 
    참고 자료에 나온 조항은 써도 되지만, 추측한 조항 번호는 절대 쓰지 마. 틀린 조항은 빈칸보다 해로워.
 8. 현재조치는 설명에 나온 내용만 써. 없으면 빈 문자열이야.
 9. 설명에 나온 기계·물질·작업 방식에 맞는 위험요인을 우선 찾고, 흔한 위험(넘어짐, 중량물 요통, 소음 등)도 빠뜨리지 마.
-   같은 위험요인을 두 번 쓰지 마. 보통 8~15개 항목이 적당해.
+   설명에 나온 작업을 할 때 흔한 관리 문제도 원인으로 고려해:
+   보호구(안전모·안전대·보안경·장갑) 미착용, 혼자 작업, 신호수·유도원 없음, 작업 전 점검 미흡, 정리정돈 미흡.
+   단, 관리 문제만 따로 한 줄로 쓰지 말고 그 때문에 생기는 구체적인 사고와 묶어 써.
+   좋은 예: "안전대를 걸지 않고 비계 가장자리에서 작업하다 균형을 잃고 추락"
+   나쁜 예: "단독 작업으로 응급상황 시 초기 대응 지연", "보호구 미착용으로 보호 실패" (구체적인 사고가 없음)
+   같은 위험요인을 두 번 쓰지 마. 항목은 10~13개, 감소대책은 항목마다 1~2개만 써 (답이 길면 중간에 끊길 수 있어).
+   군더더기는 빼되, 유해·위험요인 문장에는 반드시 대상(어떤 기계·도구·작업)과 원인을 넣어.
+   나쁜 예: "허리에 무리가 가 요통 발생", "날에 베여 열상 발생" (무엇을 하다가인지 없음)
+   좋은 예: "대형 화분을 혼자 들어 옮기다 허리에 무리가 가 요통", "전정기로 높은 가지를 자르다 날에 손이 베임"
 10. 설명에 없는 사실(인원, 설비, 물질)을 지어내지 마.
 
-다른 설명 없이 아래 형태의 JSON 하나만 답해. 숫자 칸에는 1, 2, 3 중 하나의 숫자만 써.
+답은 아래 형태의 JSON 하나뿐이어야 해. 앞뒤에 인사말·설명·코드 블록(\`\`\`)을 붙이지 마.
+문자열 안에서는 큰따옴표를 쓰지 마(필요하면 작은따옴표). 한글로만 쓰고 한자·일본어를 섞지 마. 숫자 칸에는 1, 2, 3 중 하나의 숫자만 써.
 {"작업명":"...","항목":[{"세부작업":"...","분류":"기계적 요인","원인":"...","유해위험요인":"...","관련근거":"","현재조치":"","가능성":2,"중대성":3,"감소대책":["...","..."],"개선후가능성":1,"개선후중대성":3}]}`;
 var FORMAT_RETRY = '형식이 올바르지 않아. 다른 말 없이 {"작업명":"...","항목":[...]} 형태의 JSON 하나만 다시 답해.';
 var DraftError = class extends Error {
@@ -171,26 +192,49 @@ async function callOpenRouter(apiKey, messages, timeoutMs = TIMEOUT_MS, model = 
     throw new DraftError("AI가 응답하지 못했어요.", 502);
   }
   const data = await res.json().catch(() => null);
-  return {
-    content: String(data?.choices?.[0]?.message?.content ?? ""),
-    model: String(data?.model ?? model)
-  };
+  const choice = data?.choices?.[0];
+  const content = String(choice?.message?.content ?? "");
+  if (!content.trim()) {
+    const reasoning2 = String(choice?.message?.reasoning ?? "");
+    console.error(
+      `[assess] 빈 답: 종료 이유 ${choice?.finish_reason ?? "?"}, 생각 ${reasoning2.length}자, 토큰 ${JSON.stringify(data?.usage ?? {})}` + (data?.error ? `, 오류 ${String(data.error.code ?? "")} ${String(data.error.message ?? "").slice(0, 120)}` : "")
+    );
+  }
+  return { content, model: String(data?.model ?? model) };
 }
 var toScore = (v) => {
   const n = Number(String(v ?? "").match(/[1-3]/)?.[0]);
   return n >= 1 && n <= 3 ? n : NaN;
 };
 var toText = (v) => typeof v === "string" ? v.trim() : v == null ? "" : String(v).trim();
-function parseAssessment(content) {
-  const start = content.indexOf("{");
-  const end = content.lastIndexOf("}");
-  if (start === -1 || end <= start) return null;
-  let data;
-  try {
-    data = JSON.parse(content.slice(start, end + 1));
-  } catch {
-    return null;
+function lenientJson(content) {
+  const text = content.replace(/```(?:json)?/gi, "");
+  const start = text.indexOf("{");
+  if (start === -1) return null;
+  const tryParse = (t) => {
+    try {
+      return JSON.parse(t);
+    } catch {
+      return void 0;
+    }
+  };
+  const fix = (t) => t.replace(/[\u201C\u201D]/g, '"').replace(/,\s*([}\]])/g, "$1");
+  const end = text.lastIndexOf("}");
+  if (end > start) {
+    const body2 = text.slice(start, end + 1);
+    const ok = tryParse(body2) ?? tryParse(fix(body2));
+    if (ok !== void 0) return ok;
   }
+  const body = fix(text.slice(start));
+  for (let i = body.lastIndexOf("}"); i > 0; i = body.lastIndexOf("}", i - 1)) {
+    const ok = tryParse(body.slice(0, i + 1) + "]}");
+    if (ok !== void 0) return ok;
+  }
+  return null;
+}
+function parseAssessment(content) {
+  const data = lenientJson(content);
+  if (!data) return null;
   const obj = data;
   if (!obj || !Array.isArray(obj.항목)) return null;
   const items = obj.항목.map((raw) => {
@@ -214,6 +258,10 @@ function parseAssessment(content) {
   return { 작업명: toText(obj.작업명) || "작업", 항목: items };
 }
 var MIN_RETRY_MS = 5e4;
+var DRAFT_EFFORT = (() => {
+  const v = process.env.DRAFT_REASONING_EFFORT?.trim();
+  return v === "low" || v === "medium" || v === "high" ? v : void 0;
+})();
 async function aiDraft(apiKey, description, reference, opts = {}) {
   const messages = [
     { role: "system", content: SYSTEM_PROMPT },
@@ -243,10 +291,18 @@ ${reference}
       break;
     }
     attempts++;
-    const { content, model } = await callOpenRouter(apiKey, messages, opts.deadline ? Math.max(left, 1e3) : TIMEOUT_MS);
+    const effort = opts.effort ?? DRAFT_EFFORT;
+    const { content, model } = await callOpenRouter(
+      apiKey,
+      messages,
+      opts.deadline ? Math.max(left, 1e3) : TIMEOUT_MS,
+      MODEL,
+      effort ? { effort } : void 0
+    );
     lastModel = model;
     const parsed = parseAssessment(content);
     if (!parsed) {
+      opts.onFormatError?.(content);
       if (formatRetried) break;
       formatRetried = true;
       console.error("[assess] 응답 형식 오류, 한 번 다시 요청합니다.");

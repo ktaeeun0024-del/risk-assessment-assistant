@@ -56,6 +56,13 @@ export function validate(assessment: Assessment): ValidationReport {
     if (unknown.length > 0) {
       warnings.push(`${tag}: ${unknown.join(", ")}은(는) 표준모델에 없는 조항입니다. 실제 조문을 확인하세요`);
     }
+    // AI가 가끔 일본어·한자를 섞어 쓴다 (11/17 예: '사용済 필터')
+    const foreign = [it.세부작업, it.원인, it.유해위험요인, ...measures]
+      .join(" ")
+      .match(/[぀-ヿ一-鿿]/gu);
+    if (foreign) {
+      warnings.push(`${tag}: 한글이 아닌 글자(${[...new Set(foreign)].join("")})가 섞여 있습니다. 문장을 고쳐 주세요`);
+    }
     const key = `${it.세부작업}|${it.유해위험요인}`;
     if (seen.has(key)) warnings.push(`${tag}: 앞 항목과 중복됩니다`);
     seen.add(key);

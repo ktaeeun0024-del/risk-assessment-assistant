@@ -69,14 +69,21 @@ for (const [n, c] of cases.entries()) {
       if (!apiKey) throw new Error(".env에 OPENROUTER_API_KEY가 없습니다");
       const reference = referenceText(searched.sources, searched.assessment);
       let ai;
+      // 형식이 틀린 원래 답은 results/raw/에 남겨 원인을 본다
+      const onFormatError = (content: string) => {
+        mkdirSync(new URL("./results/raw/", import.meta.url), { recursive: true });
+        const f = new URL(`./results/raw/${c.id}-${Date.now()}.txt`, import.meta.url);
+        writeFileSync(f, content);
+        console.log(`  ${c.id}: 형식이 틀린 답을 ${f.pathname.split("/eval/")[1]}에 저장`);
+      };
       try {
-        ai = await aiDraft(apiKey, c.description, reference);
+        ai = await aiDraft(apiKey, c.description, reference, { onFormatError });
       } catch (err) {
         // 1분 한도에 걸리면 잠시 쉬고 한 번만 다시 시도
         if (err instanceof DraftError && err.status === 429) {
           console.log(`  ${c.id}: 요청이 많아 40초 쉬고 다시 시도`);
           await sleep(40_000);
-          ai = await aiDraft(apiKey, c.description, reference);
+          ai = await aiDraft(apiKey, c.description, reference, { onFormatError });
         } else throw err;
       }
       assessment = ai.assessment;

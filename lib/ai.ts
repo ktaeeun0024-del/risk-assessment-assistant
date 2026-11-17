@@ -23,16 +23,29 @@ const MODEL = process.env.OPENROUTER_MODEL?.trim() || DEFAULT_MODEL;
 // 배포 사이트의 서버 실행 시간 제한(Netlify 무료는 약 10초)보다 짧게 AI_TIMEOUT_MS를 주면
 // 시간 안에 AI를 포기하고 검색 초안으로 넘어간다. 기본 90초.
 const TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS) > 0 ? Number(process.env.AI_TIMEOUT_MS) : 90_000;
-export const PROMPT_VERSION = "draft-v1-openrouter";
+// v2 (11/17): 20종 검증에서 드러난 문제를 고침 — 설명에 없는 설비 지어내기, 원인 없이 결과만 쓴 문장,
+// 자주 놓친 관리적 원인(보호구·혼자 작업·신호수), 형식 오류(코드 블록·설명 덧붙이기)
+// v3 (11/17): v2에서 관리 문제를 사고 없이 따로 쓴 줄('단독 작업으로 초기 대응 지연')이 생겨 사고와 묶어 쓰게 함,
+// 약품 이름 지어내기 금지, 한자·일본어 금지. 답이 길면(100초 넘게 생성) 빈 답이 와서 항목 10~13개·대책 1~2개로.
+// ('40자 안팎으로 짧게'를 넣었더니 E17에서 대상·원인이 빠진 문장만 나와 빼고, 대상·원인 필수를 예와 함께 넣음)
+export const PROMPT_VERSION = "draft-v3-openrouter";
 
 const SYSTEM_PROMPT = `너는 50인 미만 제조 사업장의 위험성평가를 돕는 산업안전 전문가야.
 사용자는 안전 담당자가 없는 현장의 반장이나 사업주이고, 작업 내용을 말로 설명해.
 그 설명으로 안전보건공단 KRAS 양식의 위험성평가표 초안을 한국어로 작성해.
 
+가장 중요한 규칙
+- 작업 설명에 나온 기계·공구·물질·장소만 다뤄. 설명에 없는 기계·공구·물질은 위험요인에 쓰지 마.
+  예: 설명에 그라인더가 없으면 "그라인더 분진"을 쓰지 않는다. 고소작업대·사다리·약품도 설명에 있을 때만 쓴다.
+  약품 이름(세척제, 조류제거제 등)도 설명에 없으면 지어내지 마.
+  참고 자료에 나온 설비라도 설명에 없으면 쓰지 마.
+
 작성 방법
 1. 작업을 세부작업(준비, 본작업, 정리·운반 등)으로 나누고 세부작업마다 유해·위험요인을 찾아.
-2. 유해·위험요인은 "무엇 때문에 → 어떤 사고가 난다"가 드러나는 한 문장으로 써.
-   예: "프레스 금형 사이에 손을 넣은 상태에서 슬라이드가 내려와 손가락이 끼임"
+2. 유해·위험요인은 "무엇 때문에(대상과 원인) → 어떤 사고가 난다"가 드러나는 한 문장으로 써.
+   좋은 예: "프레스 금형 사이에 손을 넣은 상태에서 슬라이드가 내려와 손가락이 끼임"
+   나쁜 예: "화학물질 접촉·흡입으로 피부염, 중독 발생" (무엇을 하다가 어떻게 닿는지 없이 결과만 나열함)
+   한 문장에는 사고 하나만 써. 여러 사고를 쉼표로 늘어놓지 마.
 3. 분류는 다음 6가지 중 하나를 글자 그대로 써: ${CATEGORIES.join(", ")}
 4. 위험성은 3x3 빈도·강도법으로 판단해.
    - 가능성: ${Object.entries(LIKELIHOOD).map(([k, v]) => `${k}=${v}`).join("; ")}
@@ -48,10 +61,19 @@ const SYSTEM_PROMPT = `너는 50인 미만 제조 사업장의 위험성평가�
    참고 자료에 나온 조항은 써도 되지만, 추측한 조항 번호는 절대 쓰지 마. 틀린 조항은 빈칸보다 해로워.
 8. 현재조치는 설명에 나온 내용만 써. 없으면 빈 문자열이야.
 9. 설명에 나온 기계·물질·작업 방식에 맞는 위험요인을 우선 찾고, 흔한 위험(넘어짐, 중량물 요통, 소음 등)도 빠뜨리지 마.
-   같은 위험요인을 두 번 쓰지 마. 보통 8~15개 항목이 적당해.
+   설명에 나온 작업을 할 때 흔한 관리 문제도 원인으로 고려해:
+   보호구(안전모·안전대·보안경·장갑) 미착용, 혼자 작업, 신호수·유도원 없음, 작업 전 점검 미흡, 정리정돈 미흡.
+   단, 관리 문제만 따로 한 줄로 쓰지 말고 그 때문에 생기는 구체적인 사고와 묶어 써.
+   좋은 예: "안전대를 걸지 않고 비계 가장자리에서 작업하다 균형을 잃고 추락"
+   나쁜 예: "단독 작업으로 응급상황 시 초기 대응 지연", "보호구 미착용으로 보호 실패" (구체적인 사고가 없음)
+   같은 위험요인을 두 번 쓰지 마. 항목은 10~13개, 감소대책은 항목마다 1~2개만 써 (답이 길면 중간에 끊길 수 있어).
+   군더더기는 빼되, 유해·위험요인 문장에는 반드시 대상(어떤 기계·도구·작업)과 원인을 넣어.
+   나쁜 예: "허리에 무리가 가 요통 발생", "날에 베여 열상 발생" (무엇을 하다가인지 없음)
+   좋은 예: "대형 화분을 혼자 들어 옮기다 허리에 무리가 가 요통", "전정기로 높은 가지를 자르다 날에 손이 베임"
 10. 설명에 없는 사실(인원, 설비, 물질)을 지어내지 마.
 
-다른 설명 없이 아래 형태의 JSON 하나만 답해. 숫자 칸에는 1, 2, 3 중 하나의 숫자만 써.
+답은 아래 형태의 JSON 하나뿐이어야 해. 앞뒤에 인사말·설명·코드 블록(\`\`\`)을 붙이지 마.
+문자열 안에서는 큰따옴표를 쓰지 마(필요하면 작은따옴표). 한글로만 쓰고 한자·일본어를 섞지 마. 숫자 칸에는 1, 2, 3 중 하나의 숫자만 써.
 {"작업명":"...","항목":[{"세부작업":"...","분류":"기계적 요인","원인":"...","유해위험요인":"...","관련근거":"","현재조치":"","가능성":2,"중대성":3,"감소대책":["...","..."],"개선후가능성":1,"개선후중대성":3}]}`;
 
 const FORMAT_RETRY =
@@ -105,10 +127,17 @@ export async function callOpenRouter(
     throw new DraftError("AI가 응답하지 못했어요.", 502);
   }
   const data = await res.json().catch(() => null);
-  return {
-    content: String(data?.choices?.[0]?.message?.content ?? ""),
-    model: String(data?.model ?? model),
-  };
+  const choice = data?.choices?.[0];
+  const content = String(choice?.message?.content ?? "");
+  if (!content.trim()) {
+    // 생각하는 모델이 생각에 분량·시간을 다 쓰면 답이 비어서 온다 (11/17 형식 오류 3번이 모두 빈 답)
+    const reasoning = String(choice?.message?.reasoning ?? "");
+    console.error(
+      `[assess] 빈 답: 종료 이유 ${choice?.finish_reason ?? "?"}, 생각 ${reasoning.length}자, 토큰 ${JSON.stringify(data?.usage ?? {})}` +
+        (data?.error ? `, 오류 ${String(data.error.code ?? "")} ${String(data.error.message ?? "").slice(0, 120)}` : ""),
+    );
+  }
+  return { content, model: String(data?.model ?? model) };
 }
 
 const toScore = (v: unknown): number => {
@@ -119,16 +148,38 @@ const toText = (v: unknown) => (typeof v === "string" ? v.trim() : v == null ? "
 
 // 모델 답에서 JSON을 꺼내 평가표 모양으로 맞춘다. 형식이 틀리면 null.
 // (분류 표기·숫자 문자열처럼 뜻이 분명한 것만 고치고, 내용은 검사기가 판단한다)
-export function parseAssessment(content: string): Assessment | null {
-  const start = content.indexOf("{");
-  const end = content.lastIndexOf("}");
-  if (start === -1 || end <= start) return null;
-  let data: unknown;
-  try {
-    data = JSON.parse(content.slice(start, end + 1));
-  } catch {
-    return null;
+// JSON 문자열을 너그럽게 읽는다: 그대로 → 흔한 실수 고치기(코드 블록, 끝 쉼표, 둥근 따옴표) → 잘린 답이면
+// 마지막으로 끝까지 써진 항목까지만 살리기. 내용은 바꾸지 않는다.
+export function lenientJson(content: string): unknown {
+  const text = content.replace(/```(?:json)?/gi, "");
+  const start = text.indexOf("{");
+  if (start === -1) return null;
+  const tryParse = (t: string) => {
+    try {
+      return JSON.parse(t);
+    } catch {
+      return undefined;
+    }
+  };
+  const fix = (t: string) => t.replace(/[\u201C\u201D]/g, '"').replace(/,\s*([}\]])/g, "$1");
+  const end = text.lastIndexOf("}");
+  if (end > start) {
+    const body = text.slice(start, end + 1);
+    const ok = tryParse(body) ?? tryParse(fix(body));
+    if (ok !== undefined) return ok;
   }
+  // 잘린 답: 마지막 '}' 위치마다 배열·객체를 닫아 보며 가장 긴 것을 살린다
+  const body = fix(text.slice(start));
+  for (let i = body.lastIndexOf("}"); i > 0; i = body.lastIndexOf("}", i - 1)) {
+    const ok = tryParse(body.slice(0, i + 1) + "]}");
+    if (ok !== undefined) return ok;
+  }
+  return null;
+}
+
+export function parseAssessment(content: string): Assessment | null {
+  const data = lenientJson(content);
+  if (!data) return null;
   const obj = data as { 작업명?: unknown; 항목?: unknown };
   if (!obj || !Array.isArray(obj.항목)) return null;
   const items: AssessmentItem[] = obj.항목.map((raw) => {
@@ -166,7 +217,15 @@ export type DraftOptions = {
   // 이 시각(Date.now() 기준 ms)까지 끝내야 한다. 정하면 호출마다 남은 시간만큼만 기다리고,
   // 남은 시간이 모자라면 다시 부르지 않고 그때까지의 결과를 돌려준다 (Supabase 함수는 최대 150초).
   deadline?: number;
+  // 형식이 틀린 원래 답을 받아 본다 (검증 측정에서 원인을 보려고 파일로 남길 때)
+  onFormatError?: (content: string) => void;
+  // 모델이 생각하는 양 (없으면 DRAFT_REASONING_EFFORT 환경변수, 그것도 없으면 모델 기본값)
+  effort?: "low" | "medium" | "high";
 };
+const DRAFT_EFFORT = ((): DraftOptions["effort"] => {
+  const v = process.env.DRAFT_REASONING_EFFORT?.trim();
+  return v === "low" || v === "medium" || v === "high" ? v : undefined;
+})();
 
 export async function aiDraft(
   apiKey: string,
@@ -200,10 +259,18 @@ export async function aiDraft(
       break;
     }
     attempts++;
-    const { content, model } = await callOpenRouter(apiKey, messages, opts.deadline ? Math.max(left, 1_000) : TIMEOUT_MS);
+    const effort = opts.effort ?? DRAFT_EFFORT;
+    const { content, model } = await callOpenRouter(
+      apiKey,
+      messages,
+      opts.deadline ? Math.max(left, 1_000) : TIMEOUT_MS,
+      MODEL,
+      effort ? { effort } : undefined,
+    );
     lastModel = model;
     const parsed = parseAssessment(content);
     if (!parsed) {
+      opts.onFormatError?.(content);
       if (formatRetried) break;
       formatRetried = true;
       console.error("[assess] 응답 형식 오류, 한 번 다시 요청합니다.");
