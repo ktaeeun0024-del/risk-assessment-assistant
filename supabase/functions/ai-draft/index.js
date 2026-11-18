@@ -191,7 +191,15 @@ async function callOpenRouter(apiKey, messages, timeoutMs = TIMEOUT_MS, model = 
     if (res.status === 429) throw new DraftError("지금 AI 요청이 많아요.", 429);
     throw new DraftError("AI가 응답하지 못했어요.", 502);
   }
-  const data = await res.json().catch(() => null);
+  let data;
+  try {
+    data = await res.json();
+  } catch (err) {
+    const timedOut = err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
+    console.error(`[assess] OpenRouter 답 읽기 실패: ${timedOut ? "시간 초과" : "형식 오류"}`);
+    if (timedOut) throw new DraftError("AI 응답이 너무 오래 걸려요.", 504);
+    data = null;
+  }
   const choice = data?.choices?.[0];
   const content = String(choice?.message?.content ?? "");
   if (!content.trim()) {
@@ -292,13 +300,20 @@ ${reference}
     }
     attempts++;
     const effort = opts.effort ?? DRAFT_EFFORT;
-    const { content, model } = await callOpenRouter(
-      apiKey,
-      messages,
-      opts.deadline ? Math.max(left, 1e3) : TIMEOUT_MS,
-      MODEL,
-      effort ? { effort } : void 0
-    );
+    let reply;
+    try {
+      reply = await callOpenRouter(
+        apiKey,
+        messages,
+        opts.deadline ? Math.max(left, 1e3) : TIMEOUT_MS,
+        MODEL,
+        effort ? { effort } : void 0
+      );
+    } catch (err) {
+      if (err instanceof DraftError && err.status === 504 && assessment) break;
+      throw err;
+    }
+    const { content, model } = reply;
     lastModel = model;
     const parsed = parseAssessment(content);
     if (!parsed) {

@@ -30,7 +30,7 @@ const delayMs = Number(arg("delay", mode === "ai" ? "4000" : "0"));
 // .env의 OPENROUTER_API_KEY를 읽는다. 모델은 lib/ai.ts가 불러질 때 정해지므로 import 전에 넣는다.
 if (existsSync(".env")) process.loadEnvFile(".env");
 if (model) process.env.OPENROUTER_MODEL = model;
-if (mode === "ai") process.env.AI_TIMEOUT_MS ||= "120000";
+if (mode === "ai") process.env.AI_TIMEOUT_MS ||= "135000"; // 배포 사이트(Supabase 함수)의 AI 예산과 같게
 
 const { retrieveDraft, referenceText } = await import("../lib/retrieve");
 const { validate } = await import("../lib/validator");

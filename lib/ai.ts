@@ -26,7 +26,7 @@ const TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS) > 0 ? Number(process.env.AI
 // v2 (11/17): 20종 검증에서 드러난 문제를 고침 — 설명에 없는 설비 지어내기, 원인 없이 결과만 쓴 문장,
 // 자주 놓친 관리적 원인(보호구·혼자 작업·신호수), 형식 오류(코드 블록·설명 덧붙이기)
 // v3 (11/17): v2에서 관리 문제를 사고 없이 따로 쓴 줄('단독 작업으로 초기 대응 지연')이 생겨 사고와 묶어 쓰게 함,
-// 약품 이름 지어내기 금지, 한자·일본어 금지. 답이 길면(100초 넘게 생성) 빈 답이 와서 항목 10~13개·대책 1~2개로.
+// 약품 이름 지어내기 금지, 한자·일본어 금지. 항목 10~13개·대책 1~2개로 답 길이를 줄여 시간 제한 안에 끝나게.
 // ('40자 안팎으로 짧게'를 넣었더니 E17에서 대상·원인이 빠진 문장만 나와 빼고, 대상·원인 필수를 예와 함께 넣음)
 export const PROMPT_VERSION = "draft-v3-openrouter";
 
@@ -126,11 +126,21 @@ export async function callOpenRouter(
     if (res.status === 429) throw new DraftError("지금 AI 요청이 많아요.", 429);
     throw new DraftError("AI가 응답하지 못했어요.", 502);
   }
-  const data = await res.json().catch(() => null);
+  // OpenRouter는 답을 다 만들기 전에 응답 머리(200)를 먼저 보낸다. 그래서 시간 제한은 본문을 읽는 도중에 걸린다.
+  // 예전에는 이 시간 초과를 삼켜 '빈 답'으로 보였다 (11/18 확인: 빈 답이 모두 호출 120초 뒤에 남)
+  let data;
+  try {
+    data = await res.json();
+  } catch (err) {
+    const timedOut = err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
+    console.error(`[assess] OpenRouter 답 읽기 실패: ${timedOut ? "시간 초과" : "형식 오류"}`);
+    if (timedOut) throw new DraftError("AI 응답이 너무 오래 걸려요.", 504);
+    data = null;
+  }
   const choice = data?.choices?.[0];
   const content = String(choice?.message?.content ?? "");
   if (!content.trim()) {
-    // 생각하는 모델이 생각에 분량·시간을 다 쓰면 답이 비어서 온다 (11/17 형식 오류 3번이 모두 빈 답)
+    // 정말로 내용이 빈 답 (시간 초과는 위에서 따로 처리)
     const reasoning = String(choice?.message?.reasoning ?? "");
     console.error(
       `[assess] 빈 답: 종료 이유 ${choice?.finish_reason ?? "?"}, 생각 ${reasoning.length}자, 토큰 ${JSON.stringify(data?.usage ?? {})}` +
@@ -260,13 +270,21 @@ export async function aiDraft(
     }
     attempts++;
     const effort = opts.effort ?? DRAFT_EFFORT;
-    const { content, model } = await callOpenRouter(
-      apiKey,
-      messages,
-      opts.deadline ? Math.max(left, 1_000) : TIMEOUT_MS,
-      MODEL,
-      effort ? { effort } : undefined,
-    );
+    let reply: { content: string; model: string };
+    try {
+      reply = await callOpenRouter(
+        apiKey,
+        messages,
+        opts.deadline ? Math.max(left, 1_000) : TIMEOUT_MS,
+        MODEL,
+        effort ? { effort } : undefined,
+      );
+    } catch (err) {
+      // 시간 초과는 다시 불러도 또 넘기기 쉽다. 검사 오류 수정 중이었다면 이미 받은 평가표를 그대로 쓴다
+      if (err instanceof DraftError && err.status === 504 && assessment) break;
+      throw err;
+    }
+    const { content, model } = reply;
     lastModel = model;
     const parsed = parseAssessment(content);
     if (!parsed) {
