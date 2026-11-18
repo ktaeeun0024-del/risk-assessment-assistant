@@ -193,7 +193,7 @@ function LoginForm({ onDone, onForgot }: { onDone: (me: Me) => void; onForgot: (
 
 function RegisterForm({ onDone }: { onDone: (me: Me) => void }) {
   const [step, setStep] = useState<"form" | "code" | "pending">("form");
-  const [form, setForm] = useState({ companyName: "", businessNumber: "", name: "", email: "" });
+  const [form, setForm] = useState({ companyName: "", businessNumber: "", repName: "", startDate: "", name: "", applicantTitle: "", email: "" });
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [code, setCode] = useState("");
@@ -220,8 +220,8 @@ function RegisterForm({ onDone }: { onDone: (me: Me) => void }) {
       <div className="notice-box">
         <strong>가입 신청을 받았어요.</strong>
         <br />
-        사이트 관리자가 회사 정보(사업자등록번호)를 확인한 뒤 승인하면 <strong>{form.email}</strong>로 알려 드려요. 승인 후 로그인할
-        수 있어요.
+        사이트 관리자가 회사 정보를 확인한 뒤 승인하면 <strong>{form.email}</strong>로 알려 드려요. 확인을 위해 회사 대표 전화로
+        신청 사실을 여쭤볼 수 있어요. 승인 후 로그인할 수 있어요.
       </div>
     );
   }
@@ -268,8 +268,9 @@ function RegisterForm({ onDone }: { onDone: (me: Me) => void }) {
       }}
     >
       <p className="hint">
-        이메일 인증을 마치면 가입 신청이 돼요. 사이트 관리자가 사업자등록번호를 확인하고 승인하면 쓸 수 있어요. 가입한 사람이 회사
-        관리자가 되고, 직원은 관리자가 메일로 초대해요.
+        사업자등록증을 옆에 두고 적어 주세요. 대표가 아니어도 가입할 수 있어요: 대표자 성명과 개업일자는 사업자등록증에 적힌 그대로,
+        이름·이메일은 실제로 가입하는 분의 것을 적으면 돼요. 국세청에서 사업자등록증 내용을 확인하고, 사이트 관리자가 회사에 확인한 뒤
+        승인해요. 가입한 사람이 회사 관리자가 되고, 직원은 관리자가 메일로 초대해요.
       </p>
       <label>
         회사 이름
@@ -286,8 +287,20 @@ function RegisterForm({ onDone }: { onDone: (me: Me) => void }) {
         />
       </label>
       <label>
-        내 이름
+        대표자 성명 (사업자등록증 그대로, 공동대표면 한 명)
+        <input value={form.repName} onChange={set("repName")} maxLength={50} required />
+      </label>
+      <label>
+        개업일자 (사업자등록증 그대로)
+        <input type="date" value={form.startDate} onChange={set("startDate")} required />
+      </label>
+      <label>
+        내 이름 (가입하는 분)
         <input value={form.name} onChange={set("name")} maxLength={50} required />
+      </label>
+      <label>
+        내 직책 (선택, 예: 생산팀장)
+        <input value={form.applicantTitle} onChange={set("applicantTitle")} maxLength={30} />
       </label>
       <label>
         이메일 (인증번호를 받을 주소)
@@ -564,6 +577,22 @@ export function MembersPanel({ me }: { me: Me }) {
               <div className="row-actions">
                 <button
                   type="button"
+                  className="ghost small"
+                  disabled={busy}
+                  onClick={() => {
+                    const toAdmin = m.role === "member";
+                    const q = toAdmin
+                      ? `${m.name}님을 관리자로 지정할까요? 직원 초대·삭제와 관리자 지정을 할 수 있게 돼요.`
+                      : `${m.name}님의 관리자 권한을 해제할까요?`;
+                    if (window.confirm(q)) {
+                      act("/api/company/members/role", { userId: m.id, role: toAdmin ? "admin" : "member" }, toAdmin ? `${m.name}님을 관리자로 지정했어요.` : `${m.name}님의 관리자 권한을 해제했어요.`);
+                    }
+                  }}
+                >
+                  {m.role === "member" ? "관리자로 지정" : "관리자 해제"}
+                </button>
+                <button
+                  type="button"
                   className="ghost small danger"
                   disabled={busy}
                   onClick={() => {
@@ -580,11 +609,16 @@ export function MembersPanel({ me }: { me: Me }) {
         ))}
       </ul>
       <p className="hint">직원이 비밀번호를 잊으면 로그인 화면의 &lsquo;비밀번호를 잊었어요&rsquo;로 직접 다시 정할 수 있어요.</p>
+      <p className="hint">
+        담당자가 바뀌면 새 담당자를 &lsquo;관리자로 지정&rsquo;하세요. 내 관리자 권한은 다른 관리자가 해제할 수 있어요. 회사에는 관리자가
+        늘 한 명 이상 남아요.
+      </p>
     </section>
   );
 }
 
 type NtsCheck = { ok: boolean; status: string; taxType?: string; closedAt?: string; note?: string; checkedAt: string };
+type NtsValidate = { result: "일치" | "불일치" | "확인 못 함"; note?: string; checkedAt: string };
 
 type CompanyApplication = {
   id: number;
@@ -597,6 +631,11 @@ type CompanyApplication = {
   reviewedBy: string | null;
   adminName: string | null;
   adminEmail: string | null;
+  repName: string | null;
+  startDate: string | null;
+  applicantTitle: string | null;
+  ntsValidate: NtsValidate | null;
+  sameNumber: number;
 };
 
 const STATUS_NAMES = { pending: "승인 대기", approved: "승인", rejected: "거절" } as const;
@@ -629,10 +668,14 @@ export function SiteAdminPanel() {
   return (
     <section className="panel">
       <h2>회사 가입 승인</h2>
-      <p className="hint">
-        국세청 조회 결과가 &lsquo;계속사업자&rsquo;인지, 회사 이름과 신청자가 맞는지 확인한 뒤 승인해 주세요. 승인·거절하면 신청자에게
-        메일로 알려요.
-      </p>
+      <p className="hint">승인하기 전에 확인할 것 (승인·거절하면 신청자에게 메일로 알려요)</p>
+      <ol className="checklist">
+        <li>국세청 상태가 &lsquo;계속사업자&rsquo;이고 진위확인이 &lsquo;일치&rsquo;인지 (&lsquo;확인 못 함&rsquo;이면 다시 조회)</li>
+        <li>
+          회사 대표 전화(회사 홈페이지나 114에서 찾은 번호, 신청자가 준 번호 말고)로 신청자가 그 회사에서 반장노트 가입을 맡은 사람인지
+        </li>
+        <li>같은 번호로 다른 신청이 있으면 어느 쪽이 진짜인지 확인하고, 아닌 쪽은 거절</li>
+      </ol>
       {error && <p className="error">{error}</p>}
       {loaded && pending.length === 0 && <p className="ok">기다리는 신청이 없어요.</p>}
 
@@ -676,23 +719,34 @@ export function SiteAdminPanel() {
 function CompanyItem({ c, children }: { c: CompanyApplication; children?: React.ReactNode }) {
   const nts = c.ntsCheck;
   const ntsOk = nts?.ok && nts.status === "계속사업자";
+  const v = c.ntsValidate;
   return (
     <li>
       <div>
         <strong>{c.name}</strong> <span className={`tag${c.status === "pending" ? " warn" : ""}`}>{STATUS_NAMES[c.status]}</span>
+        {c.sameNumber > 0 && <span className="tag warn">같은 번호 신청 {c.sameNumber}건 더</span>}
+        <span className="sub">사업자등록번호 {c.businessNumber ?? "(없음)"}</span>
         <span className="sub">
-          사업자등록번호 {c.businessNumber ?? "(없음)"}
-        </span>
-        <span className="sub">
-          국세청:{" "}
+          국세청 상태:{" "}
           <span className={ntsOk ? "ok-text" : "warn-text"}>
             {nts ? `${nts.status}${nts.taxType ? ` (${nts.taxType})` : ""}${nts.closedAt ? ` 폐업일 ${nts.closedAt}` : ""}` : "조회 안 함"}
           </span>
           {nts?.note && `, ${nts.note}`}
         </span>
+        {c.businessNumber && (
+          <span className="sub">
+            진위확인 (대표자 {c.repName ?? "-"}, 개업 {c.startDate ? `${c.startDate.slice(0, 4)}-${c.startDate.slice(4, 6)}-${c.startDate.slice(6)}` : "-"}):{" "}
+            <span className={v?.result === "일치" ? "ok-text" : "warn-text"}>{v ? v.result : "안 함 (예전 신청)"}</span>
+            {v?.note && `, ${v.note}`}
+          </span>
+        )}
         <span className="sub">
-          신청자 {c.adminName ?? "-"} &lt;{c.adminEmail ?? "-"}&gt; · 신청 {shortDate(c.createdAt)}
-          {c.reviewedAt && ` · 처리 ${shortDate(c.reviewedAt)}`}
+          신청자 {c.adminName ?? "-"}
+          {c.applicantTitle && ` (${c.applicantTitle})`} &lt;{c.adminEmail ?? "-"}&gt;
+        </span>
+        <span className="sub">
+          신청 {shortDate(c.createdAt)}
+          {c.reviewedAt && `, 처리 ${shortDate(c.reviewedAt)}`}
         </span>
       </div>
       {children}

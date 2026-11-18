@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import { authErrorResponse, checkSameOrigin, readJson, requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { listMembers, targetMember } from "@/lib/members";
+import { companyState, targetMember } from "@/lib/members";
 
 export async function POST(request: Request) {
   try {
@@ -10,7 +10,7 @@ export async function POST(request: Request) {
     const admin = await requireAdmin();
     const id = await targetMember(admin, (await readJson(request)).userId);
     await (await db()).query(`DELETE FROM users WHERE id = $1 AND company_id = $2`, [id, admin.companyId]);
-    return NextResponse.json({ members: await listMembers(admin.companyId) });
+    return NextResponse.json(await companyState(admin.companyId));
   } catch (err) {
     return authErrorResponse(err, "members-remove");
   }

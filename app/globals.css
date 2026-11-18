@@ -1411,6 +1411,17 @@ button.matrix-cell[aria-pressed="true"] {
   max-width: 440px;
 }
 
+/* 가입 승인 전 확인 순서 */
+.checklist {
+  display: grid;
+  gap: var(--space-xs);
+  max-width: 70ch;
+  margin: 0 0 var(--space-md);
+  padding-left: var(--space-lg);
+  font-size: var(--text-sm);
+  color: var(--text);
+}
+
 .stack label {
   display: grid;
   gap: var(--space-xs);

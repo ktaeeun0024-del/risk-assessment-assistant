@@ -60,9 +60,29 @@ const SCHEMA = `
   DO $$ BEGIN
     ALTER TABLE companies ADD CONSTRAINT companies_status_check CHECK (status IN ('pending', 'approved', 'rejected'));
   EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-  -- 거절된 회사의 번호로는 다시 신청할 수 있게, 대기·승인 상태만 중복을 막는다
+  -- 같은 사업자등록번호로 승인된 회사는 하나만. (11/18) 승인 대기는 여러 개 받는다:
+  -- 남이 번호를 먼저 신청해 두면 진짜 회사가 가입하지 못하는 '번호 선점'을 막고, 사이트 관리자가 진짜를 골라 승인한다.
+  -- 예전 코드(배포 사이트)가 같은 이름으로 'IF NOT EXISTS' 생성을 하므로 이름은 그대로 두고 조건만 바꾼다.
+  DO $$ BEGIN
+    IF EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'companies_business_number_idx'
+                AND indexdef NOT LIKE '%''approved''%') THEN
+      DROP INDEX companies_business_number_idx;
+    END IF;
+  END $$;
   CREATE UNIQUE INDEX IF NOT EXISTS companies_business_number_idx
-    ON companies(business_number) WHERE business_number IS NOT NULL AND status <> 'rejected';
+    ON companies(business_number) WHERE business_number IS NOT NULL AND status = 'approved';
+  -- 진위확인 (11/18): 대표자 성명·개업일자(사업자등록증 그대로), 신청자 직책, 국세청 진위확인 결과
+  ALTER TABLE companies ADD COLUMN IF NOT EXISTS rep_name text;
+  ALTER TABLE companies ADD COLUMN IF NOT EXISTS start_date text;
+  ALTER TABLE companies ADD COLUMN IF NOT EXISTS applicant_title text;
+  ALTER TABLE companies ADD COLUMN IF NOT EXISTS nts_validate jsonb;
+  -- 진위확인 시도 기록: 번호 하나에 1시간 5번까지 (대표자 이름을 아는 사람이 개업일자를 하나씩 맞혀 보는 것을 막는다)
+  CREATE TABLE IF NOT EXISTS nts_attempts (
+    id              serial PRIMARY KEY,
+    business_number text NOT NULL,
+    created_at      timestamptz NOT NULL DEFAULT now()
+  );
+  CREATE INDEX IF NOT EXISTS nts_attempts_idx ON nts_attempts(business_number, created_at DESC);
 
   -- 이메일 인증번호 (가입·직원 초대·비밀번호 찾기). 번호는 해시만 저장하고, 쓰거나 만료되면 다시 쓸 수 없다.
   CREATE TABLE IF NOT EXISTS email_codes (
@@ -109,6 +129,7 @@ const SCHEMA = `
   ALTER TABLE users ENABLE ROW LEVEL SECURITY;
   ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
   ALTER TABLE assessment_history ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE nts_attempts ENABLE ROW LEVEL SECURITY;
 `;
 
 // 개발 서버가 코드를 다시 불러와도 연결 풀이 계속 늘어나지 않도록 하나만 만들어 재사용한다.

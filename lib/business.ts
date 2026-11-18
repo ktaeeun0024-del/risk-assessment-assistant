@@ -1,8 +1,12 @@
 // 사업자등록번호: 형식(검증 숫자) 확인과 국세청 사업자등록 상태 조회. 서버에서만 쓴다.
 //
-// 국세청 조회는 공공데이터포털 '국세청_사업자등록정보 진위확인 및 상태조회 서비스'를 쓴다.
+// 국세청 조회는 공공데이터포털 '국세청_사업자등록정보 진위확인 및 상태조회 서비스'를 쓴다 (같은 키로 두 기능).
+//   상태조회(status): 번호가 계속사업자인지
+//   진위확인(validate): 번호 + 대표자 성명 + 개업일자가 사업자등록증과 맞는지 (11/18 추가)
+// 사업자번호는 영수증·홈페이지에 공개돼 있어 번호만으로는 그 회사 사람인지 알 수 없다. 진위확인은 '사업자등록증 내용을 안다'를
+// 확인할 뿐 신청자가 대표일 필요는 없다 (실무 관리자가 가입할 수 있다). 회사가 맡긴 사람인지는 사이트 관리자가 전화로 확인한다.
 // 환경변수 NTS_SERVICE_KEY(일반 인증키, Decoding)가 없거나 조회에 실패해도 가입은 막지 않고,
-// '확인 못 함'으로 저장해 사이트 관리자가 승인 화면에서 직접 판단하게 한다.
+// '확인 못 함'으로 저장해 사이트 관리자가 승인 화면에서 직접 판단하게 한다. 진위확인이 '불일치'면 가입 신청을 받지 않는다.
 import { AuthError } from "./auth";
 
 const WEIGHTS = [1, 3, 7, 1, 3, 7, 1, 3, 5];
@@ -67,5 +71,49 @@ export async function checkWithNts(businessNumber: string): Promise<NtsCheck> {
     };
   } catch {
     return { checkedAt, ok: false, status: "확인 못 함", note: "국세청 조회 시간 초과 또는 연결 실패" };
+  }
+}
+
+// 개업일자: '2015-03-02' 또는 '20150302' → '20150302'. 1900년 이후, 오늘 이전의 실제 날짜만.
+export function normalizeStartDate(v: unknown): string {
+  const d = typeof v === "string" ? v.replace(/[\s.-]/g, "") : "";
+  const m = /^(\d{4})(\d{2})(\d{2})$/.exec(d);
+  const date = m ? new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])) : null;
+  const real = date && date.getUTCFullYear() === +m![1] && date.getUTCMonth() === +m![2] - 1 && date.getUTCDate() === +m![3];
+  if (!real || +m![1] < 1900 || date!.getTime() > Date.now()) {
+    throw new AuthError("개업일자를 사업자등록증에 적힌 날짜로 다시 확인해 주세요.", 400);
+  }
+  return d;
+}
+
+export type NtsValidate = {
+  checkedAt: string;
+  result: "일치" | "불일치" | "확인 못 함";
+  note?: string;
+};
+
+// 진위확인: 사업자등록증의 번호·대표자 성명·개업일자가 국세청 기록과 맞는지. 공동대표면 한 명만 넣어도 된다.
+export async function validateWithNts(businessNumber: string, startDate: string, repName: string): Promise<NtsValidate> {
+  const checkedAt = new Date().toISOString();
+  const key = process.env.NTS_SERVICE_KEY;
+  if (!key) return { checkedAt, result: "확인 못 함", note: "국세청 조회 키(NTS_SERVICE_KEY)가 없음" };
+  try {
+    const res = await fetch(
+      `https://api.odcloud.kr/api/nts-businessman/v1/validate?serviceKey=${encodeURIComponent(key)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ businesses: [{ b_no: businessNumber, start_dt: startDate, p_nm: repName }] }),
+        signal: AbortSignal.timeout(4_000),
+      },
+    );
+    if (!res.ok) return { checkedAt, result: "확인 못 함", note: `국세청 진위확인 실패 (HTTP ${res.status})` };
+    const data = (await res.json()) as { data?: { valid?: string; valid_msg?: string }[] };
+    const row = data.data?.[0];
+    if (row?.valid === "01") return { checkedAt, result: "일치" };
+    if (row?.valid === "02") return { checkedAt, result: "불일치", note: row.valid_msg || undefined };
+    return { checkedAt, result: "확인 못 함", note: "국세청 응답에 결과가 없음" };
+  } catch {
+    return { checkedAt, result: "확인 못 함", note: "국세청 진위확인 시간 초과 또는 연결 실패" };
   }
 }
