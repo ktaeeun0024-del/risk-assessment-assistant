@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#1f1c1a",
+  themeColor: "#141416",
 };
 
 export default function RootLayout({
@@ -25,12 +25,12 @@ export default function RootLayout({
           crossOrigin="anonymous"
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
         />
-        {/* 외국인 근로자용 요약의 크메르·미얀마·네팔어 글자 (그 글자를 쓸 때만 받는다) */}
+        {/* 제목 글꼴 Oswald(영문·숫자)·Black Han Sans(한글), 외국인 근로자용 요약의 크메르·미얀마·네팔어 글자 (쓰는 글자만 받는다) */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;700&family=Noto+Sans+Khmer:wght@400;700&family=Noto+Sans+Myanmar:wght@400;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&family=Black+Han+Sans&family=Noto+Sans+Devanagari:wght@400;700&family=Noto+Sans+Khmer:wght@400;700&family=Noto+Sans+Myanmar:wght@400;700&display=swap"
         />
       </head>
       <body>{children}</body>

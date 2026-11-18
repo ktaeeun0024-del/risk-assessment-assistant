@@ -390,19 +390,6 @@ export default function Home() {
       </main>
 
       <footer className="site-foot">
-        {/* 큰 글자 띠: 페이지에서 유일하게 움직이는 장식. 움직임 줄이기 설정이면 멈춘다 */}
-        <div className="marquee" aria-hidden="true">
-          <div className="marquee-track">
-            {[0, 1].map((n) => (
-              <span key={n} className="marquee-set">
-                <span>반장노트</span>
-                <span className="marquee-alt">Banjang Note</span>
-                <span>반장노트</span>
-                <span className="marquee-alt">Banjang Note</span>
-              </span>
-            ))}
-          </div>
-        </div>
         <div className="foot-inner">
           <p className="foot-brand">반장노트</p>
           <div className="foot-text">

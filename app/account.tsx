@@ -681,11 +681,14 @@ function CompanyItem({ c, children }: { c: CompanyApplication; children?: React.
       <div>
         <strong>{c.name}</strong> <span className={`tag${c.status === "pending" ? " warn" : ""}`}>{STATUS_NAMES[c.status]}</span>
         <span className="sub">
-          사업자등록번호 {c.businessNumber ?? "(없음)"} · 국세청:{" "}
+          사업자등록번호 {c.businessNumber ?? "(없음)"}
+        </span>
+        <span className="sub">
+          국세청:{" "}
           <span className={ntsOk ? "ok-text" : "warn-text"}>
             {nts ? `${nts.status}${nts.taxType ? ` (${nts.taxType})` : ""}${nts.closedAt ? ` 폐업일 ${nts.closedAt}` : ""}` : "조회 안 함"}
           </span>
-          {nts?.note && ` · ${nts.note}`}
+          {nts?.note && `, ${nts.note}`}
         </span>
         <span className="sub">
           신청자 {c.adminName ?? "-"} &lt;{c.adminEmail ?? "-"}&gt; · 신청 {shortDate(c.createdAt)}

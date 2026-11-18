@@ -1,0 +1,162 @@
+/* 반장노트 디자인 토큰: Hallmark 테마 Formwork (콘크리트), 11/18
+   공사장 사무실 말투: 따뜻한 회색 콘크리트 바탕, 거의 검정인 글자, 굵은 대문자 제목, 각진 모서리와 진한 그림자,
+   색은 안전 주황 하나 (주 버튼·고른 것·초점에만). 빨강·노랑·초록은 위험성 단계에만 쓴다.
+   평가표와 외국인 근로자용 요약은 밝은 판(plate)에 굵은 검정 테두리. 색과 글꼴은 여기서만 정한다. */
+:root {
+  /* 간격: 4px 단위 */
+  --space-3xs: 2px; --space-2xs: 4px; --space-xs: 8px; --space-sm: 12px; --space-md: 16px; --space-lg: 24px;
+  --space-xl: 40px; --space-2xl: 64px; --space-3xl: 96px; --space-4xl: 144px;
+  --s1: var(--space-2xs); --s2: var(--space-xs); --s3: var(--space-sm); --s4: var(--space-md); --s5: var(--space-lg);
+  --s6: 32px; --s7: 48px; --s8: 80px;
+
+  --text-xs: 0.75rem; --text-sm: 0.875rem; --text-md: 1rem; --text-lg: 1.2rem; --text-xl: 1.44rem; --text-2xl: 1.728rem; --text-3xl: 2.074rem;
+  --text-display-s: 1.44rem; --text-display: 2.488rem; --text-section: 1.44rem; --text-title: 1.2rem; --text-lead: 1rem;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1); --ease-in: cubic-bezier(0.7, 0, 0.84, 0); --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease: var(--ease-out);
+  --dur-micro: 120ms; --dur-short: 220ms; --dur-long: 420ms;
+  --container: 1240px; --gutter: 16px; --gap-columns: 32px;
+  --z-base: 1; --z-raised: 10; --z-dropdown: 100; --z-sticky: 200; --z-sticky-nav: 300; --z-modal: 400; --z-toast: 500; --z-tooltip: 600;
+
+  /* Formwork · Cast */
+  --color-paper: oklch(74% 0.008 80);     /* 콘크리트 바탕 */
+  --color-paper-2: oklch(69% 0.009 80);   /* 한 단계 어두운 면 */
+  --color-paper-3: oklch(64% 0.01 80);
+  --color-plate: oklch(82% 0.007 80);
+  --color-plate-ink: oklch(95% 0.006 80); /* 가장 밝은 판 (평가표 종이, 입력칸) */
+  --color-ink: oklch(18% 0.005 270);
+  --color-ink-2: oklch(28% 0.006 80);
+  --color-muted: oklch(31.5% 0.008 80);
+  --color-rule: oklch(58% 0.01 80);
+  --color-accent: oklch(66% 0.21 38);     /* 안전 주황 */
+  --color-accent-deep: oklch(48% 0.17 38);
+  --color-accent-ink: oklch(18% 0.005 270);
+  --color-focus: oklch(42% 0.15 38);
+  --color-disabled: oklch(64% 0.01 80);
+  --color-disabled-ink: oklch(24% 0.006 80);
+  --color-field-edge: oklch(18% 0.005 270);
+  --color-on-ink: oklch(95% 0.006 80);    /* 검정 띠(상단 바·바닥글) 위 글자 */
+  --color-on-ink-muted: oklch(78% 0.008 80);
+  --color-on-ink-rule: oklch(36% 0.006 270);
+  --color-on-ink-focus: oklch(72% 0.19 40);
+  --texture-opacity: 0.05;
+
+  /* 위험성 3단계 (콘크리트 바탕 위 글자) */
+  --color-high: oklch(42% 0.16 27); --color-high-bg: oklch(88% 0.05 27);
+  --color-mid: oklch(40% 0.09 75);  --color-mid-bg: oklch(90% 0.07 90);
+  --color-low: oklch(38% 0.09 150); --color-low-bg: oklch(88% 0.05 150);
+  --color-error: oklch(40% 0.16 27); --color-success: oklch(38% 0.09 150);
+
+  /* 매트릭스 칸: 높음 빨강, 보통 노랑(주황과 겹치지 않게), 낮음 초록 */
+  --cell-high: oklch(50% 0.17 27);
+  --cell-mid: oklch(82% 0.14 88);
+  --cell-low: oklch(46% 0.1 150);
+  --cell-on-high: oklch(97% 0.006 80);
+  --cell-on-mid: oklch(18% 0.005 270);
+  --cell-on-low: oklch(97% 0.006 80);
+
+  /* 밝은 판 (평가표·요약) */
+  --paper-surface: oklch(95% 0.006 80);
+  --paper-surface-2: oklch(90% 0.007 80);
+  --paper-ink: oklch(18% 0.005 270);
+  --paper-muted: oklch(38% 0.008 80);
+  --paper-rule: oklch(78% 0.008 80);
+  --paper-rule-strong: oklch(18% 0.005 270);
+  --paper-accent: oklch(66% 0.21 38);
+  --paper-accent-hover: oklch(70% 0.2 40);
+  --paper-focus: oklch(42% 0.15 38);
+  --paper-high: oklch(45% 0.17 27); --paper-high-bg: oklch(92% 0.04 27);
+  --paper-mid: oklch(45% 0.1 70);   --paper-mid-bg: oklch(93% 0.06 90);
+  --paper-low: oklch(42% 0.1 150);  --paper-low-bg: oklch(92% 0.04 150);
+  --print-paper: oklch(99% 0.004 80);
+
+  /* 글꼴: 제목은 Oswald 700 대문자(영문·숫자) + 한글은 Black Han Sans, 본문은 Pretendard.
+     크메르·미얀마·데바나가리(네팔어) 글자는 Pretendard에 없어 Noto Sans로 채운다 */
+  --font-display: "Oswald", "Black Han Sans", "Pretendard Variable", Pretendard, sans-serif;
+  --font-body: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Noto Sans KR", "Noto Sans Khmer", "Noto Sans Myanmar", "Noto Sans Devanagari", sans-serif;
+  --font-outlier: var(--font-body);
+  --font-label: var(--font-body);         /* 작은 제목·버튼·이름: 큰 한글 제목 글꼴은 작으면 뭉개져서 Pretendard 굵게 */
+  --label-weight: 800;
+  --color-placeholder: oklch(48% 0.008 80);
+  --display-weight: 700;
+  --tracking-display: -0.005em;
+
+  --radius-card: 0; --radius-pill: 0; --rule-hair: 1px; --rule-bar: 3px;
+  --shadow-card: 6px 6px 0 var(--color-ink);
+  --shadow-press: 0 3px 0 var(--color-accent-deep);
+  --shadow-inset: inset 0 2px 3px color-mix(in oklab, var(--color-ink) 30%, transparent);
+  --theme-color: oklch(18% 0.005 270);
+
+  /* 예전 이름 (컴포넌트 규칙이 쓰는 이름은 그대로 두고 위 토큰을 가리킨다) */
+  --bg: var(--color-paper);
+  --surface: var(--color-plate-ink);
+  --surface-2: var(--color-paper-2);
+  --text: var(--color-ink);
+  --muted: var(--color-muted);
+  --border: var(--color-rule);
+  --border-strong: var(--color-ink);
+  --primary: var(--color-accent);
+  --primary-hover: oklch(70% 0.2 40);
+  --primary-soft: var(--color-paper-2);
+  --on-primary: var(--color-accent-ink);
+  --ring: var(--color-focus);
+  --signal: var(--color-accent);
+  --signal-ink: var(--color-accent-ink);
+  --band: var(--color-paper);
+  --on-band: var(--color-ink);
+  --on-band-muted: var(--color-muted);
+  --band-line: var(--color-ink);
+  --error: var(--color-error);
+  --high: var(--color-high); --high-bg: var(--color-high-bg);
+  --mid: var(--color-mid);   --mid-bg: var(--color-mid-bg);
+  --low: var(--color-low);   --low-bg: var(--color-low-bg);
+  --font: var(--font-body);
+  --radius-lg: 0; --radius: 0; --radius-sm: 0;
+  --shadow: none;
+  --paper-shadow: var(--shadow-card);
+
+  color-scheme: light;
+}
+
+/* 판 위에서는 같은 이름이 판용 색을 가리킨다 */
+.paper,
+.summary-sheet {
+  --surface: var(--paper-surface);
+  --surface-2: var(--paper-surface-2);
+  --text: var(--paper-ink);
+  --muted: var(--paper-muted);
+  --border: var(--paper-rule);
+  --border-strong: var(--paper-rule-strong);
+  --primary: var(--paper-accent);
+  --primary-hover: var(--paper-accent-hover);
+  --on-primary: var(--paper-ink);
+  --ring: var(--paper-focus);
+  --color-focus: var(--paper-focus);
+  --color-disabled: var(--paper-surface-2);
+  --color-disabled-ink: var(--paper-muted);
+  --error: var(--paper-high);
+  --high: var(--paper-high); --high-bg: var(--paper-high-bg);
+  --mid: var(--paper-mid);   --mid-bg: var(--paper-mid-bg);
+  --low: var(--paper-low);   --low-bg: var(--paper-low-bg);
+}
+
+/* 검정 띠(상단 바·바닥글) 위에서는 밝은 글자 */
+.app-header,
+.site-foot {
+  --text: var(--color-on-ink);
+  --muted: var(--color-on-ink-muted);
+  --on-band: var(--color-on-ink);
+  --on-band-muted: var(--color-on-ink-muted);
+  --band-line: var(--color-on-ink-rule);
+  --border: var(--color-on-ink-rule);
+  --border-strong: var(--color-on-ink-muted);
+  --primary: var(--color-accent);
+  --primary-hover: var(--color-on-ink-focus);
+  --ring: var(--color-on-ink-focus);
+  --color-focus: var(--color-on-ink-focus);
+  --surface: var(--color-ink);
+  --surface-2: var(--color-ink-2);
+}
+
+@media (min-width: 40rem) {
+  :root { --gutter: 24px; }
+}
