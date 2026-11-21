@@ -15,7 +15,7 @@ import { riskLevel, type Assessment, type RiskLevel, type ValidationReport } fro
 import type { HistoryItem } from "@/lib/history";
 import { AuthPanel, MembersPanel, PasswordPanel, postJson, ROLE_NAMES, SiteAdminPanel, type Me } from "./account";
 import { AlertIcon, CheckCircleIcon, DownloadIcon, InfoIcon, LockIcon, PrinterIcon, SearchIcon, SparkIcon } from "./icons";
-import { cellOf, MatrixGrid, MatrixLegend, summarize, type Cell } from "./matrix";
+import { cellOf, MatrixGrid, MatrixGuide, MatrixLegend, ResultGuide, summarize, type Cell } from "./matrix";
 import { SafetySummary } from "./safety-summary";
 
 const LEVEL_CLASS: Record<RiskLevel, string> = { 높음: "high", 보통: "mid", 낮음: "low" };
@@ -312,7 +312,7 @@ export default function Home() {
               <div className="band-summary">
                 <h1 className="band-headline">{summary.headline}</h1>
                 <p className="band-detail">{summary.detail}</p>
-                <p className="band-hint">매트릭스 칸을 누르면 그 칸의 항목만 아래 평가표에 남아요.</p>
+                <ResultGuide />
                 {editing ? (
                   form
                 ) : (
@@ -343,6 +343,7 @@ export default function Home() {
               </div>
               <div className="band-key">
                 <MatrixGrid title="위험성은 이렇게 매겨요" items={null} phase="before" />
+                <MatrixGuide />
                 <MatrixLegend />
               </div>
             </>

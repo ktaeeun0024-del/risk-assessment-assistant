@@ -78,7 +78,7 @@ section > header p { margin-left: auto; font-size: 4.2mm; color: var(--muted); m
 /* 1 문제 */
 .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6mm; }
 .stat { padding: 3.5mm 4.5mm 3mm; background: var(--plate); border: 0.8mm solid var(--ink); }
-.stat .fig { font-family: "Oswald", sans-serif; font-size: 12mm; line-height: 0.95; color: var(--ink); font-variant-numeric: tabular-nums; }
+.stat .fig { font-family: "Oswald", sans-serif; font-size: 11mm; line-height: 0.95; color: var(--ink); font-variant-numeric: tabular-nums; }
 .stat .fig small { font-size: 7mm; }
 .stat p { margin-top: 1.5mm; font-size: 4.1mm; line-height: 1.4; font-weight: 600; }
 .stat .src { margin-top: 1.5mm; font-size: 3.2mm; font-weight: 400; color: var(--plate-muted); line-height: 1.35; }
@@ -108,18 +108,26 @@ section > header p { margin-left: auto; font-size: 4.2mm; color: var(--muted); m
 .mx-plate { padding: 5mm 5.5mm; background: var(--plate); border: var(--bar) solid var(--ink); box-shadow: var(--shadow); }
 .mx-row { display: grid; grid-template-columns: minmax(0, 1fr) 10mm minmax(0, 1fr); align-items: center; }
 .mx-title { font-size: 5.4mm; font-weight: 800; margin-bottom: 2mm; }
-.mx-grid { display: grid; grid-template-columns: 9mm repeat(3, minmax(0, 1fr)); gap: 1.2mm; }
+.mx-grid { display: grid; grid-template-columns: 12mm repeat(3, minmax(0, 1fr)); gap: 1.2mm; }
 .ylab, .xlab { font-size: 3.6mm; color: var(--plate-muted); align-self: center; }
 .xlab { text-align: center; }
-.cell { display: grid; place-items: center; align-content: center; height: 14mm; }
-.cell b { font-family: "Oswald", sans-serif; font-size: 8.5mm; line-height: 1; }
+.cell { display: grid; place-items: center; align-content: center; height: 12.5mm; }
+.cell b { font-family: "Oswald", sans-serif; font-size: 7.6mm; line-height: 1; }
 .cell span { font-size: 3.6mm; font-weight: 700; margin-top: 0.6mm; }
 .cell.high { background: var(--high); color: var(--plate); }
 .cell.mid { background: var(--mid); color: var(--ink); }
 .cell.low { background: var(--low); color: var(--plate); }
 .cell.none { opacity: 0.3; }
 .mx-arrow { text-align: center; font-family: "Oswald", sans-serif; font-size: 9mm; }
-.mx-head { margin-top: 3.5mm; font-family: var(--display); font-weight: 800; font-size: 7mm; letter-spacing: -0.02em; }
+.mx-head { margin-top: 2.5mm; font-family: var(--display); font-weight: 800; font-size: 6.4mm; letter-spacing: -0.02em; }
+.ylab i, .xlab i { font-style: normal; font-family: "Oswald", sans-serif; color: var(--ink); }
+.mx-guide { margin: 1.5mm 0 0; padding-left: 4.5mm; display: grid; gap: 0.8mm; font-size: 3.8mm; line-height: 1.4; color: var(--ink-2); }
+.mx-guide b { color: var(--ink); font-weight: 800; }
+.mx-legend { margin-top: 2mm; display: flex; align-items: center; flex-wrap: wrap; gap: 1.5mm; font-size: 3.7mm; color: var(--ink-2); }
+.mx-legend .sw { width: 3.6mm; height: 3.6mm; margin-left: 2mm; }
+.mx-legend .sw:first-child { margin-left: 0; }
+.mx-legend b { color: var(--ink); }
+.sw.high { background: var(--high); } .sw.mid { background: var(--mid); } .sw.low { background: var(--low); }
 .mx-note { margin-top: 1.5mm; font-size: 3.9mm; line-height: 1.45; color: var(--plate-muted); }
 
 /* 3 검증 */
@@ -138,7 +146,7 @@ section > header p { margin-left: auto; font-size: 4.2mm; color: var(--muted); m
 .bar .count { position: absolute; right: 2.5mm; top: 50%; translate: 0 -50%; font-size: 3.8mm; color: var(--ink-2); font-weight: 600; }
 .facts { padding: 4.5mm 5.5mm; background: var(--plate); border: 0.8mm solid var(--ink); }
 .facts dl { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 5mm; row-gap: 2.2mm; align-items: baseline; }
-.facts dt { font-family: "Oswald", sans-serif; font-size: 9mm; line-height: 1; font-variant-numeric: tabular-nums; }
+.facts dt { font-family: "Oswald", sans-serif; font-size: 8mm; line-height: 1; font-variant-numeric: tabular-nums; }
 .facts dd { margin: 0; font-size: 4.2mm; line-height: 1.4; }
 .facts .how { margin-top: 3.5mm; padding-top: 3mm; border-top: 0.5mm solid var(--plate-rule); font-size: 3.8mm; line-height: 1.5; color: var(--plate-muted); }
 .facts .how b { color: var(--ink); }
@@ -224,9 +232,13 @@ section > header p { margin-left: auto; font-size: 4.2mm; color: var(--muted); m
       <div class="how-grid">
         <div>
                     <div class="mx-plate">
-            <div class="mx-row"><div class="mx"><p class="mx-title">지금</p><div class="mx-grid"><span class="ylab">치명</span><div class="cell mid none"><b>3</b><span>–</span></div><div class="cell high"><b>6</b><span>6개</span></div><div class="cell high"><b>9</b><span>4개</span></div><span class="ylab">중간</span><div class="cell low none"><b>2</b><span>–</span></div><div class="cell mid"><b>4</b><span>5개</span></div><div class="cell high"><b>6</b><span>3개</span></div><span class="ylab">경미</span><div class="cell low none"><b>1</b><span>–</span></div><div class="cell low none"><b>2</b><span>–</span></div><div class="cell mid none"><b>3</b><span>–</span></div><span></span><span class="xlab">낮음</span><span class="xlab">보통</span><span class="xlab">높음</span></div></div><span class="mx-arrow" aria-hidden="true">→</span><div class="mx"><p class="mx-title">대책을 하면</p><div class="mx-grid"><span class="ylab">치명</span><div class="cell mid"><b>3</b><span>10개</span></div><div class="cell high none"><b>6</b><span>–</span></div><div class="cell high none"><b>9</b><span>–</span></div><span class="ylab">중간</span><div class="cell low"><b>2</b><span>8개</span></div><div class="cell mid none"><b>4</b><span>–</span></div><div class="cell high none"><b>6</b><span>–</span></div><span class="ylab">경미</span><div class="cell low none"><b>1</b><span>–</span></div><div class="cell low none"><b>2</b><span>–</span></div><div class="cell mid none"><b>3</b><span>–</span></div><span></span><span class="xlab">낮음</span><span class="xlab">보통</span><span class="xlab">높음</span></div></div></div>
+            <div class="mx-row"><div class="mx"><p class="mx-title">지금</p><div class="mx-grid"><span class="ylab">치명 <i>3</i></span><div class="cell mid none"><b>3</b><span>–</span></div><div class="cell high"><b>6</b><span>6개</span></div><div class="cell high"><b>9</b><span>4개</span></div><span class="ylab">휴업 <i>2</i></span><div class="cell low none"><b>2</b><span>–</span></div><div class="cell mid"><b>4</b><span>5개</span></div><div class="cell high"><b>6</b><span>3개</span></div><span class="ylab">경미 <i>1</i></span><div class="cell low none"><b>1</b><span>–</span></div><div class="cell low none"><b>2</b><span>–</span></div><div class="cell mid none"><b>3</b><span>–</span></div><span></span><span class="xlab">드묾 <i>1</i></span><span class="xlab">가끔 <i>2</i></span><span class="xlab">자주 <i>3</i></span></div></div><span class="mx-arrow" aria-hidden="true">→</span><div class="mx"><p class="mx-title">대책을 하면</p><div class="mx-grid"><span class="ylab">치명 <i>3</i></span><div class="cell mid"><b>3</b><span>10개</span></div><div class="cell high none"><b>6</b><span>–</span></div><div class="cell high none"><b>9</b><span>–</span></div><span class="ylab">휴업 <i>2</i></span><div class="cell low"><b>2</b><span>8개</span></div><div class="cell mid none"><b>4</b><span>–</span></div><div class="cell high none"><b>6</b><span>–</span></div><span class="ylab">경미 <i>1</i></span><div class="cell low none"><b>1</b><span>–</span></div><div class="cell low none"><b>2</b><span>–</span></div><div class="cell mid none"><b>3</b><span>–</span></div><span></span><span class="xlab">드묾 <i>1</i></span><span class="xlab">가끔 <i>2</i></span><span class="xlab">자주 <i>3</i></span></div></div></div>
             <p class="mx-head">위험성 높음 13개가 대책 후 0개로</p>
-            <p class="mx-note">중대성(세로) × 가능성(가로). 큰 숫자는 위험성 점수, 아래는 항목 수 (금속 부품 공장 예시, 18개)</p>
+            <ol class="mx-guide">
+              <li><b>가능성</b>(가로): 얼마나 자주 일어나나 · <b>중대성</b>(세로): 일어나면 얼마나 크게 다치나</li>
+              <li>큰 숫자 = 가능성 × 중대성 = 위험성 점수, 아래 = 그 칸의 위험요인 수 (금속 부품 공장 예시 18개). 대책을 하면 항목이 아래·왼쪽(초록)으로 옮겨 간다</li>
+            </ol>
+            <p class="mx-legend"><span class="sw high"></span><b>높음</b> 6~9 작업 전 대책 <span class="sw mid"></span><b>보통</b> 3~4 줄이기 <span class="sw low"></span><b>낮음</b> 1~2 유지</p>
           </div>
           
         </div>
@@ -356,7 +368,7 @@ section > header p { margin-left: auto; font-size: 4.2mm; color: var(--muted); m
       <p>직접 써 보기</p>
       <span>sage-centaur-becf16.netlify.app</span>
     </div>
-    <p class="sources">출처: 뉴시스 「산재사망 80%가 50인 미만 사업장…」 2025-08-01 · 이투데이 「[노무, 톡!] 50인 미만 기업들이 위험하다」(한국경영자총협회 조사) · 뉴시스 2023-12-18(중소기업중앙회 조사) · MTN, 고용노동부 자료(신정훈 의원실 분석) · 공공데이터포털 한국가스공사 위험성평가 표준모델 · 고용노동부 고시 제2023-19호</p>
+    <p class="sources">출처: 뉴시스 2025-08-01 · 이투데이(한국경영자총협회 조사) · 뉴시스 2023-12-18(중소기업중앙회 조사) · MTN(고용노동부 자료) · 공공데이터포털 한국가스공사 위험성평가 표준모델 · 고용노동부 고시 제2023-19호</p>
   </footer>
 </div>
 </body>

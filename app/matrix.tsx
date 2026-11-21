@@ -10,7 +10,9 @@ export type Phase = "before" | "after";
 export type Cell = { l: number; s: number; phase: Phase } | null;
 
 const LEVEL_CLASS: Record<RiskLevel, string> = { 높음: "high", 보통: "mid", 낮음: "low" };
-const short = (label: string) => label.replace(/\(.*\)/, "");
+// 눈금은 쉬운 말 + 점수. (예전 '낮음·보통·높음'은 위험성 등급과 같은 말이라 처음 보는 사람이 헷갈렸다)
+const L_TICK: Record<number, string> = { 1: "드묾", 2: "가끔", 3: "자주" };
+const S_TICK: Record<number, string> = { 1: "경미", 2: "휴업", 3: "치명" };
 
 export function cellOf(it: AssessmentItem, phase: Phase): { l: number; s: number } {
   return phase === "before" ? { l: it.가능성, s: it.중대성 } : { l: it.개선후가능성, s: it.개선후중대성 };
@@ -49,8 +51,8 @@ export function MatrixGrid({
         <div className="matrix-grid" role="group" aria-label={`${title}: 가능성과 중대성별 항목`}>
           {[3, 2, 1].map((s) => (
             <div className="matrix-row" key={s}>
-              <span className="tick-y" title={SEVERITY[s]}>
-                {short(SEVERITY[s])}
+              <span className="tick-y" title={`중대성 ${s}: ${SEVERITY[s]}`}>
+                {S_TICK[s]} <span className="tick-n">{s}</span>
               </span>
               {[1, 2, 3].map((l) => {
                 const level = riskLevel(l, s);
@@ -86,8 +88,8 @@ export function MatrixGrid({
           <div className="matrix-row ticks-x" aria-hidden="true">
             <span className="tick-y" />
             {[1, 2, 3].map((l) => (
-              <span key={l} className="tick-x" title={LIKELIHOOD[l]}>
-                {short(LIKELIHOOD[l])}
+              <span key={l} className="tick-x" title={`가능성 ${l}: ${LIKELIHOOD[l]}`}>
+                {L_TICK[l]} <span className="tick-n">{l}</span>
               </span>
             ))}
           </div>
@@ -122,6 +124,38 @@ export function MatrixLegend() {
         </dd>
       </div>
     </dl>
+  );
+}
+
+// 처음 보는 사람을 위한 읽는 법 (처음 화면의 점수 기준표 아래)
+export function MatrixGuide() {
+  return (
+    <ol className="matrix-guide">
+      <li>
+        <b>가능성</b> 이 사고가 얼마나 자주 일어날까요? 드묾 1, 가끔 2, 자주 3
+      </li>
+      <li>
+        <b>중대성</b> 일어나면 얼마나 크게 다칠까요? 경미 1(치료 후 바로 복귀), 휴업 2(쉬어야 하는 부상), 치명 3(사망·장해·직업병)
+      </li>
+      <li>
+        <b>위험성 점수</b> = 가능성 × 중대성. 예: 가끔(2) 일어나고 다치면 치명(3)이면 2 × 3 = <b>6점, 높음</b>
+      </li>
+    </ol>
+  );
+}
+
+// 결과 화면의 대책 전후 매트릭스 읽는 법 (처음엔 펼쳐 두고, 익숙하면 접는다)
+export function ResultGuide() {
+  return (
+    <details className="matrix-help" open>
+      <summary>매트릭스 읽는 법</summary>
+      <ul>
+        <li>칸의 큰 숫자는 위험성 점수(가능성 × 중대성), 작은 글씨는 그 칸에 들어간 위험요인 수예요.</li>
+        <li>왼쪽은 지금, 오른쪽은 감소대책을 모두 했을 때예요. 항목이 아래·왼쪽(초록 칸)으로 옮겨 갈수록 안전해져요.</li>
+        <li>칸을 누르면 그 칸의 항목만 아래 평가표에 남아요. 다시 누르면 전체가 보여요.</li>
+      </ul>
+      <MatrixLegend />
+    </details>
   );
 }
 
