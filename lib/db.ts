@@ -2,6 +2,7 @@
 //
 // 테이블: companies(회사, 사이트 관리자 승인 필요) / users(계정, 회사 하나에 속함) / sessions(로그인 상태)
 //        / assessment_history(평가표 기록) / email_codes(이메일 인증번호) / ai_jobs(배포 사이트의 AI 초안 작업)
+//        / daily_checks(작업 전 점검 기록)
 // 회사별 분리: 평가표 기록은 반드시 로그인한 계정의 company_id로만 저장·조회한다. company_id는 화면에서 받지 않는다.
 // Supabase에서는 모든 테이블에 RLS를 켜 두고 정책을 만들지 않는다. 그러면 Supabase의 공개 REST API(anon 키)로는
 // 아무 행도 읽을 수 없고, 이 앱(테이블 소유자 계정으로 접속)만 읽고 쓸 수 있다.
@@ -84,6 +85,21 @@ const SCHEMA = `
   );
   CREATE INDEX IF NOT EXISTS nts_attempts_idx ON nts_attempts(business_number, created_at DESC);
 
+  -- 작업 전 점검 기록 (11/24): 평가표의 감소대책을 작업 전에 확인한 결과. 회사별로만 저장·조회한다.
+  CREATE TABLE IF NOT EXISTS daily_checks (
+    id         serial PRIMARY KEY,
+    company_id integer NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+    user_id    integer REFERENCES users(id) ON DELETE SET NULL,
+    title      text NOT NULL,
+    check_date date NOT NULL DEFAULT (now() AT TIME ZONE 'Asia/Seoul')::date,
+    items      jsonb NOT NULL,
+    done_count integer NOT NULL,
+    total      integer NOT NULL,
+    note       text NOT NULL DEFAULT '',
+    created_at timestamptz NOT NULL DEFAULT now()
+  );
+  CREATE INDEX IF NOT EXISTS daily_checks_company_idx ON daily_checks(company_id, created_at DESC);
+
   -- 이메일 인증번호 (가입·직원 초대·비밀번호 찾기). 번호는 해시만 저장하고, 쓰거나 만료되면 다시 쓸 수 없다.
   CREATE TABLE IF NOT EXISTS email_codes (
     id          serial PRIMARY KEY,
@@ -130,6 +146,7 @@ const SCHEMA = `
   ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
   ALTER TABLE assessment_history ENABLE ROW LEVEL SECURITY;
   ALTER TABLE nts_attempts ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE daily_checks ENABLE ROW LEVEL SECURITY;
 `;
 
 // 개발 서버가 코드를 다시 불러와도 연결 풀이 계속 늘어나지 않도록 하나만 만들어 재사용한다.

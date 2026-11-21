@@ -2035,6 +2035,250 @@ main.container:empty {
   color: var(--color-on-ink-muted);
 }
 
+
+/* ---- 작업 전 점검 체크리스트 (11/24) ---- */
+.daily-check {
+  margin-top: var(--s7);
+}
+
+.check-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-sm) var(--space-lg);
+}
+
+.check-head h2 {
+  margin: 0 0 var(--space-xs);
+  font-size: var(--text-section);
+}
+
+.check-head .hint {
+  max-width: 70ch;
+  margin: 0;
+}
+
+.check-sheet {
+  margin-top: var(--space-md);
+  padding: var(--space-lg) var(--s6);
+  color: var(--text);
+  background: var(--surface);
+  border: var(--rule-bar) solid var(--color-ink);
+  box-shadow: var(--paper-shadow);
+}
+
+.check-sheet-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-2xs) var(--space-md);
+  align-items: center;
+  padding-bottom: var(--space-sm);
+  border-bottom: 2px solid var(--color-ink);
+}
+
+.check-sheet-title {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 800;
+}
+
+.check-date {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs) var(--space-lg);
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.check-count {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin: 0;
+  font-family: "Oswald", var(--font-body);
+  font-size: 1.5rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.check-count.all {
+  color: var(--low);
+}
+
+.check-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.check-list li + li {
+  border-top: 1px solid var(--border);
+}
+
+.check-list label {
+  position: relative;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: var(--space-sm);
+  align-items: start;
+  min-height: 44px;
+  padding: var(--space-sm) 0;
+  cursor: pointer;
+}
+
+.check-list input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.check-box {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  background: var(--surface);
+  border: 2px solid var(--color-ink);
+}
+
+.check-list label.checked .check-box {
+  background: var(--color-ink);
+}
+
+.check-list label.checked .check-box::after {
+  content: "";
+  width: 8px;
+  height: 14px;
+  border: solid var(--paper-surface);
+  border-width: 0 3px 3px 0;
+  transform: translateY(-2px) rotate(45deg);
+}
+
+.check-list input:focus-visible + .check-box {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.check-action {
+  display: block;
+  font-size: var(--text-md);
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.check-list label.checked .check-action {
+  color: var(--muted);
+}
+
+.check-why {
+  display: block;
+  margin-top: var(--space-3xs);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.check-why .risk-dot {
+  display: inline-block;
+  margin-right: var(--space-2xs);
+  vertical-align: baseline;
+}
+
+.check-note {
+  display: grid;
+  gap: var(--space-xs);
+  margin-top: var(--space-md);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.check-note textarea {
+  width: 100%;
+  padding: var(--space-xs) var(--space-sm);
+  font: inherit;
+  font-weight: 400;
+  color: var(--text);
+  background: var(--surface);
+  border: 2px solid var(--color-ink);
+  border-radius: 0;
+  resize: vertical;
+}
+
+.check-note textarea:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.check-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm) var(--space-md);
+  margin-top: var(--space-md);
+}
+
+.check-actions .hint,
+.check-actions .ok,
+.check-actions .error {
+  margin: 0;
+}
+
+.check-recent {
+  margin-top: var(--space-lg);
+}
+
+.check-recent h3 {
+  margin: 0 0 var(--space-xs);
+  font-family: var(--font-label);
+  font-size: var(--text-md);
+  font-weight: 800;
+  text-transform: none;
+}
+
+.check-recent ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-sm);
+}
+
+.check-recent li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs) var(--space-md);
+  padding: var(--space-xs) 0;
+  border-top: 1px solid var(--border-strong);
+}
+
+.check-recent-date {
+  font-family: "Oswald", var(--font-body);
+  font-variant-numeric: tabular-nums;
+}
+
+.check-recent-title {
+  font-weight: 700;
+}
+
+.check-recent-who {
+  color: var(--muted);
+}
+
+.check-recent-note {
+  flex-basis: 100%;
+  color: var(--muted);
+}
+
+@media (max-width: 720px) {
+  .check-sheet {
+    padding: var(--space-md);
+  }
+}
+
 /* ---- 외국인 근로자용 안전 요약 (AI ④) ---- */
 
 .safety-summary {
@@ -2270,8 +2514,34 @@ main.container:empty {
 
   /* 표 오른쪽 선과 기울인 검사 도장이 종이 끝에서 잘리지 않게 오른쪽에 조금 여유 */
   /* 평소 인쇄는 평가표만. '요약 인쇄하기'(body[data-print="summary"])는 요약 종이만 */
-  .safety-summary {
+  .safety-summary,
+  .daily-check {
     display: none;
+  }
+
+  /* '점검표 인쇄하기'(body[data-print="check"])는 점검표만 */
+  body[data-print="check"] .paper,
+  body[data-print="check"] .check-head,
+  body[data-print="check"] .check-actions,
+  body[data-print="check"] .check-recent {
+    display: none !important;
+  }
+
+  body[data-print="check"] .daily-check {
+    display: block;
+    margin: 0;
+  }
+
+  body[data-print="check"] .check-sheet {
+    margin: 0;
+    padding: 0 var(--space-xs) 0 1px;
+    background: var(--print-paper);
+    border: none;
+    box-shadow: none;
+  }
+
+  .check-list li {
+    break-inside: avoid;
   }
 
   body[data-print="summary"] .paper,

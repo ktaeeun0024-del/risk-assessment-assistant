@@ -19,6 +19,7 @@
 - AI가 실패하면(키 없음, 요청 한도, 시간 초과 등) 표준모델 검색 초안을 대신 보여 주고 이유를 안내합니다.
 - 위험성은 낮음·보통·높음 색으로 표시하고, CSV(엑셀용)로 내려받을 수 있습니다.
 - **외국인 근로자용 안전 요약** (로그인 필요): 위험성이 높은 항목부터 6개를 코드가 쉬운 한국어로 정리하고, AI가 베트남어·크메르어·네팔어·인도네시아어·미얀마어·우즈베크어·영어로 옮깁니다. 옮긴 글은 AI가 다시 한국어로 되돌리고(역번역) 코드가 원문과 비교해, 뜻이 달라졌거나 한글이 남은 줄은 '확인 필요'로 표시합니다. 요약만 따로 인쇄할 수 있습니다.
+- **작업 전 점검 체크리스트**: 완성된 평가표의 감소대책을 "오늘 작업 전에 확인할 것"으로 바꿉니다(AI 없이 코드가 만듦, 위험성 높은 항목부터, 같은 대책은 한 번만, 최대 12개). 작업 전 안전 회의(TBM) 때 휴대폰으로 체크하고 특이사항을 적습니다. 점검표만 따로 인쇄할 수 있고, 로그인한 회사 계정은 결과를 회사 기록에 저장해 최근 점검 기록을 봅니다.
   - 번역과 역번역 검사는 두 단계로 나눠 부릅니다(배포 사이트에서 단계마다 Supabase 함수 시간을 따로 씀). 번역에는 모델의 생각(reasoning)을 꺼서 빠르게 합니다.
   - 시험(11/16): 베트남어 번역 8초 + 검사 20초, 6줄 중 4줄 통과. 크메르어 54초 + 12초, 6줄 중 5줄을 '확인 필요'로 걸러냄 → 언어에 따라 AI 번역 품질 차이가 크므로 꼭 확인 표시를 보고 나눠 줍니다.
 - **회사별 계정과 기록**
@@ -39,6 +40,7 @@
   - `POST /api/assess` — `{ "description": "...", "mode": "ai" | "search" }` → `{ assessment, report, mode, model, attempts, sources?, fallback?, notice?, saved? }`
     - 배포 사이트(`AI_JOB_URL` 있음)의 AI 모드는 `202 { pending: true, jobId }`를 바로 돌려줍니다.
   - `GET /api/assess?job=<jobId>` — AI 작업 결과 확인 (로그인 필요, 우리 회사 작업만). 작성 중이면 `202 { pending: true, jobId }`, 끝나면 위와 같은 평가표 (실패하면 검색 초안으로 대체)
+  - `GET·POST /api/checks` (작업 전 점검 기록: 최근 10건 조회, 저장. 로그인 필요)
   - `POST /api/translate` — `{ assessment, lang }` → 1단계 번역, `{ assessment, step: "check", translated }` → 2단계 역번역 검사. 배포 사이트에서는 `202 { pending, jobId }` 후 `GET /api/translate?job=…&step=translate|check`로 확인 (로그인 필요)
   - `GET /api/history` — 우리 회사 기록 최근 20개 (로그인 필요)
   - `POST /api/auth/register` → `register/verify` (회사 가입), `invite` (초대 수락), `reset` → `reset/verify` (비밀번호 찾기), `login` · `logout` · `password`, `GET /api/auth/me`
@@ -108,6 +110,9 @@ lib/ai-jobs.ts            배포 사이트의 AI 작업(초안·번역·역번�
 lib/safety-summary.ts     외국인 근로자용 쉬운 한국어 요약(코드가 만듦), 언어 목록
 lib/translate.ts          번역(1단계)과 역번역 검사(2단계)
 app/safety-summary.tsx    안전 요약 화면 (언어 선택, 번역, 검사 표시, 요약 인쇄)
+lib/checklist.ts          작업 전 점검 체크리스트 만들기 (평가표의 감소대책 → 확인할 것)
+lib/daily-checks.ts       작업 전 점검 기록 저장·조회 (회사별)
+app/daily-check.tsx       작업 전 점검 화면 (체크, 특이사항, 저장, 점검표 인쇄)
 supabase/functions/ai-draft/  Supabase Edge Function (source.ts 원본 → npm run build:edge → index.js 배포)
 eval/                     검증 측정 (검증 세트 20종, 재현율 채점, 사람 판정)
 lib/db.ts                 PostgreSQL 접속, 테이블·RLS 자동 생성

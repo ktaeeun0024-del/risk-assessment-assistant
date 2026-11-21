@@ -119,7 +119,8 @@
 
 /* 판 위에서는 같은 이름이 판용 색을 가리킨다 */
 .paper,
-.summary-sheet {
+.summary-sheet,
+.check-sheet {
   --surface: var(--paper-surface);
   --surface-2: var(--paper-surface-2);
   --text: var(--paper-ink);

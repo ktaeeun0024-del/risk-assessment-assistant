@@ -16,6 +16,7 @@ import type { HistoryItem } from "@/lib/history";
 import { AuthPanel, MembersPanel, PasswordPanel, postJson, ROLE_NAMES, SiteAdminPanel, type Me } from "./account";
 import { AlertIcon, CheckCircleIcon, DownloadIcon, InfoIcon, LockIcon, PrinterIcon, SearchIcon, SparkIcon } from "./icons";
 import { cellOf, MatrixGrid, MatrixGuide, MatrixLegend, ResultGuide, summarize, type Cell } from "./matrix";
+import { DailyCheck } from "./daily-check";
 import { SafetySummary } from "./safety-summary";
 
 const LEVEL_CLASS: Record<RiskLevel, string> = { 높음: "high", 보통: "mid", 낮음: "low" };
@@ -586,6 +587,7 @@ function ResultView({ result, me, cell, onClear }: { result: AssessResponse; me:
         </p>
       </article>
 
+      <DailyCheck assessment={result.assessment} signedIn={!!me && !me.mustChangePassword} />
       <SafetySummary assessment={result.assessment} signedIn={!!me && !me.mustChangePassword} />
     </section>
   );
