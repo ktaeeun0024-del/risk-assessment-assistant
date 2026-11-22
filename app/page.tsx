@@ -16,7 +16,9 @@ import type { HistoryItem } from "@/lib/history";
 import { AuthPanel, MembersPanel, PasswordPanel, postJson, ROLE_NAMES, SiteAdminPanel, type Me } from "./account";
 import { AlertIcon, CheckCircleIcon, DownloadIcon, InfoIcon, LockIcon, PrinterIcon, SearchIcon, SparkIcon } from "./icons";
 import { cellOf, MatrixGrid, MatrixGuide, MatrixLegend, ResultGuide, summarize, type Cell } from "./matrix";
+import { CheckRecords } from "./check-records";
 import { DailyCheck } from "./daily-check";
+import { TodayChecks } from "./today-checks";
 import { SafetySummary } from "./safety-summary";
 
 const LEVEL_CLASS: Record<RiskLevel, string> = { 높음: "high", 보통: "mid", 낮음: "low" };
@@ -39,9 +41,15 @@ export default function Home() {
   const [cell, setCell] = useState<Cell>(null);
   // 평가표가 나오면 입력칸은 접어 두고, '작업 설명 고치기'를 누를 때만 펼친다
   const [editing, setEditing] = useState(false);
+  // 지금 보고 있는 평가표가 회사 기록의 몇 번인지 (점검 기록을 그 평가표와 잇는다). 새로 만든 초안은 null
+  const [resultHistoryId, setResultHistoryId] = useState<number | null>(null);
+  // 점검을 저장하거나 매일 점검 평가표를 바꾸면 오늘의 점검·점검 기록을 다시 불러온다
+  const [checksKey, setChecksKey] = useState(0);
+  const refreshChecks = () => setChecksKey((k) => k + 1);
 
-  function showResult(next: AssessResponse | null) {
+  function showResult(next: AssessResponse | null, historyId: number | null = null) {
     setResult(next);
+    setResultHistoryId(historyId);
     setCell(null);
     setEditing(false);
   }
@@ -140,14 +148,28 @@ export default function Home() {
 
   function showHistory(item: HistoryItem) {
     setDescription(item.description);
-    showResult({
-      assessment: item.assessment,
-      report: item.report,
-      mode: item.mode,
-      model: item.model,
-      attempts: 0,
-    });
+    showResult(
+      {
+        assessment: item.assessment,
+        report: item.report,
+        mode: item.mode,
+        model: item.model,
+        attempts: 0,
+      },
+      item.id,
+    );
     window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  // 매일 점검에 쓰기/해제
+  async function toggleDaily(item: HistoryItem) {
+    try {
+      const data = await postJson<{ items: HistoryItem[] }>("/api/history", { id: item.id, daily: !item.daily });
+      setHistory(data.items);
+      refreshChecks();
+    } catch (err) {
+      setHistoryError(err instanceof Error ? err.message : "매일 점검 설정을 바꾸지 못했어요.");
+    }
   }
 
   const length = description.trim().length;
@@ -298,6 +320,12 @@ export default function Home() {
         </div>
       )}
 
+      {me && !me.mustChangePassword && (
+        <div className="container today-wrap">
+          <TodayChecks refreshKey={checksKey} onChanged={refreshChecks} />
+        </div>
+      )}
+
       {/* 위쪽 띠: 처음엔 소개·입력·점수 기준, 평가표가 생기면 대책 전후 매트릭스와 한 줄 요약 */}
       <section className="band" aria-label={result ? "대책 전후 위험성" : "평가표 만들기"}>
         <div className={`band-inner${result ? " has-result" : ""}`}>
@@ -353,7 +381,16 @@ export default function Home() {
       </section>
 
       <main className="container">
-        {result && <ResultView result={result} me={me} cell={cell} onClear={() => setCell(null)} />}
+        {result && (
+          <ResultView
+            result={result}
+            me={me}
+            cell={cell}
+            onClear={() => setCell(null)}
+            historyId={resultHistoryId}
+            onCheckSaved={refreshChecks}
+          />
+        )}
 
         {me && !me.mustChangePassword && (
           <section className="history">
@@ -369,7 +406,10 @@ export default function Home() {
                   <li key={item.id}>
                     <div className="history-row">
                       <div>
-                        <p className="history-input">{item.title}</p>
+                        <p className="history-input">
+                          {item.title}
+                          {item.daily && <span className="tag daily-tag">매일 점검</span>}
+                        </p>
                         <ul className="meta history-meta">
                           <li>{item.author}</li>
                           <li>{MODES[item.mode] ?? item.mode}</li>
@@ -378,9 +418,19 @@ export default function Home() {
                           <li>{new Date(item.createdAt).toLocaleString("ko-KR")}</li>
                         </ul>
                       </div>
-                      <button type="button" className="ghost" onClick={() => showHistory(item)}>
-                        다시 보기
-                      </button>
+                      <div className="row-actions">
+                        <button type="button" className="ghost" onClick={() => showHistory(item)}>
+                          다시 보기
+                        </button>
+                        <button
+                          type="button"
+                          className="ghost"
+                          aria-pressed={item.daily}
+                          onClick={() => toggleDaily(item)}
+                        >
+                          {item.daily ? "매일 점검 해제" : "매일 점검에 쓰기"}
+                        </button>
+                      </div>
                     </div>
                     <p className="history-desc">{item.description}</p>
                   </li>
@@ -389,6 +439,8 @@ export default function Home() {
             )}
           </section>
         )}
+
+        {me && !me.mustChangePassword && <CheckRecords refreshKey={checksKey} />}
       </main>
 
       <footer className="site-foot">
@@ -426,7 +478,21 @@ function Risk({ l, s }: { l: number; s: number }) {
 }
 
 // 결과: 인쇄해서 바로 쓸 수 있는 위험성평가표 서식
-function ResultView({ result, me, cell, onClear }: { result: AssessResponse; me: Me | null; cell: Cell; onClear: () => void }) {
+function ResultView({
+  result,
+  me,
+  cell,
+  onClear,
+  historyId,
+  onCheckSaved,
+}: {
+  result: AssessResponse;
+  me: Me | null;
+  cell: Cell;
+  onClear: () => void;
+  historyId: number | null;
+  onCheckSaved: () => void;
+}) {
   const { assessment, report } = result;
   // 매트릭스에서 고른 칸이 있으면 그 칸 항목만 (번호는 원래 순서 유지)
   const rows = assessment.항목
@@ -587,7 +653,12 @@ function ResultView({ result, me, cell, onClear }: { result: AssessResponse; me:
         </p>
       </article>
 
-      <DailyCheck assessment={result.assessment} signedIn={!!me && !me.mustChangePassword} />
+      <DailyCheck
+        assessment={result.assessment}
+        signedIn={!!me && !me.mustChangePassword}
+        historyId={historyId}
+        onSaved={onCheckSaved}
+      />
       <SafetySummary assessment={result.assessment} signedIn={!!me && !me.mustChangePassword} />
     </section>
   );

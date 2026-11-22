@@ -99,6 +99,10 @@ const SCHEMA = `
     created_at timestamptz NOT NULL DEFAULT now()
   );
   CREATE INDEX IF NOT EXISTS daily_checks_company_idx ON daily_checks(company_id, created_at DESC);
+  -- 매일 점검 (11/22): 회사가 매일 점검에 쓸 평가표를 고르고, 점검 기록을 그 평가표와 잇는다
+  ALTER TABLE assessment_history ADD COLUMN IF NOT EXISTS daily boolean NOT NULL DEFAULT false;
+  ALTER TABLE daily_checks ADD COLUMN IF NOT EXISTS history_id integer REFERENCES assessment_history(id) ON DELETE SET NULL;
+  CREATE INDEX IF NOT EXISTS daily_checks_history_idx ON daily_checks(history_id, created_at DESC);
 
   -- 이메일 인증번호 (가입·직원 초대·비밀번호 찾기). 번호는 해시만 저장하고, 쓰거나 만료되면 다시 쓸 수 없다.
   CREATE TABLE IF NOT EXISTS email_codes (

@@ -15,6 +15,7 @@ export type HistoryItem = {
   report: ValidationReport;
   author: string;
   createdAt: string;
+  daily: boolean; // 매일 점검에 쓰는 평가표 (11/22)
 };
 
 export async function saveHistory(
@@ -46,7 +47,7 @@ export async function recentHistory(companyId: number, limit = 20): Promise<Hist
   const pool = await db();
   const { rows } = await pool.query(
     `SELECT h.id, h.title, h.description, h.mode, h.model, h.item_count AS "itemCount", h.passed,
-            h.assessment, h.report, COALESCE(u.name, '(삭제된 계정)') AS author, h.created_at AS "createdAt"
+            h.assessment, h.report, COALESCE(u.name, '(삭제된 계정)') AS author, h.created_at AS "createdAt", h.daily
        FROM assessment_history h
        LEFT JOIN users u ON u.id = h.user_id
       WHERE h.company_id = $1
@@ -55,4 +56,15 @@ export async function recentHistory(companyId: number, limit = 20): Promise<Hist
     [companyId, limit],
   );
   return rows.map((row) => ({ ...row, createdAt: new Date(row.createdAt).toISOString() }));
+}
+
+// 매일 점검에 쓸지 정한다. 우리 회사 평가표만 바뀐다 (없거나 다른 회사면 false).
+export async function setDaily(companyId: number, id: number, daily: boolean): Promise<boolean> {
+  const pool = await db();
+  const { rowCount } = await pool.query(`UPDATE assessment_history SET daily = $3 WHERE id = $1 AND company_id = $2`, [
+    id,
+    companyId,
+    daily,
+  ]);
+  return !!rowCount;
 }

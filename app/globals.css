@@ -1315,7 +1315,7 @@ button.matrix-cell[aria-pressed="true"] {
   list-style: none;
 }
 
-.history li {
+.history ol > li {
   padding: var(--s4);
   background: var(--surface);
   border: 1px solid var(--border);
@@ -1323,7 +1323,7 @@ button.matrix-cell[aria-pressed="true"] {
   transition: border-color 160ms var(--ease);
 }
 
-.history li:hover {
+.history ol > li:hover {
   border-color: var(--border-strong);
 }
 
@@ -2279,6 +2279,259 @@ main.container:empty {
   }
 }
 
+
+/* ---- 오늘의 작업 전 점검 (로그인 후 첫 화면 맨 위, 11/22) ---- */
+.today-wrap {
+  padding-top: var(--space-lg);
+  padding-bottom: 0;
+}
+
+.today {
+  padding: var(--space-lg) var(--s6);
+  color: var(--paper-ink);
+  background: var(--paper-surface);
+  border: var(--rule-bar) solid var(--color-ink);
+  box-shadow: var(--paper-shadow);
+  --text: var(--paper-ink);
+  --muted: var(--paper-muted);
+  --border: var(--paper-rule);
+  --border-strong: var(--paper-rule-strong);
+  --surface: var(--paper-surface);
+  --surface-2: var(--paper-surface-2);
+  --low: var(--paper-low);
+  --mid: var(--paper-mid);
+  --high: var(--paper-high);
+  --error: var(--paper-high);
+  --ring: var(--paper-focus);
+}
+
+.today-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2xs) var(--space-md);
+  padding-bottom: var(--space-sm);
+  border-bottom: 2px solid var(--color-ink);
+}
+
+.today-head h2 {
+  margin: 0;
+  font-size: var(--text-section);
+}
+
+.today-date {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.today-progress {
+  margin: 0 0 0 auto;
+  font-family: "Oswald", var(--font-body);
+  font-size: 1.25rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.today-progress.all {
+  color: var(--low);
+}
+
+.today-empty {
+  max-width: 70ch;
+  margin: var(--space-sm) 0 0;
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.today-empty b {
+  color: var(--text);
+}
+
+.today-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.today-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs) var(--space-md);
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.today-title {
+  display: grid;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+
+.today-title b {
+  font-weight: 800;
+}
+
+.today-done,
+.today-todo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  font-size: var(--text-sm);
+}
+
+.today-done {
+  color: var(--low);
+  font-weight: 700;
+}
+
+.today-todo {
+  color: var(--high);
+  font-weight: 700;
+}
+
+.today .daily-check {
+  margin-top: var(--space-lg);
+}
+
+@media (max-width: 720px) {
+  .today {
+    padding: var(--space-md);
+  }
+}
+
+/* 자주 못 하는 대책 알림 */
+.check-misses {
+  margin-top: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  color: var(--paper-ink);
+  background: var(--paper-mid-bg);
+  border: 2px solid var(--paper-mid);
+}
+
+.check-misses p {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2xs);
+  margin: 0;
+}
+
+.check-misses ul {
+  margin: var(--space-xs) 0 0;
+  padding-left: var(--space-lg);
+}
+
+.miss-count {
+  color: var(--paper-mid);
+  font-weight: 700;
+}
+
+.check-action .tag {
+  margin-left: var(--space-xs);
+  vertical-align: middle;
+}
+
+/* 회사 평가표: 매일 점검 표시 */
+.daily-tag {
+  margin-left: var(--space-xs);
+  vertical-align: middle;
+}
+
+/* 작업 전 점검 기록 */
+.records-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-sm) var(--space-md);
+  margin: var(--space-sm) 0 var(--space-md);
+}
+
+.records-tools label {
+  display: grid;
+  gap: var(--space-2xs);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.records-tools input {
+  min-height: 40px;
+  padding: var(--space-2xs) var(--space-xs);
+  font: inherit;
+  color: var(--color-ink);
+  background: var(--color-plate-ink);
+  border: 2px solid var(--color-ink);
+  border-radius: 0;
+}
+
+.records-tools input:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.records-tools a.ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: 40px;
+  padding: var(--space-xs) var(--space-md);
+  font-weight: 700;
+  font-size: var(--text-sm);
+  color: var(--color-ink);
+  text-decoration: none;
+  background: var(--color-paper-2);
+  border: 2px solid var(--color-ink);
+  box-shadow: var(--shadow-inset);
+}
+
+.records-tools a.ghost:hover {
+  background: var(--color-plate-ink);
+}
+
+.records-tools a.ghost:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.record-items {
+  display: grid;
+  gap: var(--space-2xs);
+  margin: var(--space-sm) 0 0;
+  padding: var(--space-sm) var(--space-md);
+  list-style: none;
+  font-size: var(--text-sm);
+  background: var(--color-plate-ink);
+  border: 1px solid var(--color-ink);
+}
+
+.record-items li {
+  display: grid;
+  grid-template-columns: 4em minmax(0, 1fr);
+  gap: var(--space-xs);
+  padding: var(--space-3xs) 0;
+}
+
+.record-mark {
+  font-weight: 800;
+}
+
+.record-items .done .record-mark {
+  color: var(--paper-low);
+}
+
+.record-items .missed .record-mark {
+  color: var(--paper-high);
+}
+
+.record-why {
+  display: block;
+  color: var(--paper-muted);
+}
+
 /* ---- 외국인 근로자용 안전 요약 (AI ④) ---- */
 
 .safety-summary {
@@ -2515,8 +2768,30 @@ main.container:empty {
   /* 표 오른쪽 선과 기울인 검사 도장이 종이 끝에서 잘리지 않게 오른쪽에 조금 여유 */
   /* 평소 인쇄는 평가표만. '요약 인쇄하기'(body[data-print="summary"])는 요약 종이만 */
   .safety-summary,
-  .daily-check {
+  .daily-check,
+  .today-wrap {
     display: none;
+  }
+
+  /* 점검표 인쇄: 누른 점검표 하나만 (오늘의 점검 칸 안에 있어도) */
+  body[data-print="check"] .today-wrap {
+    display: block;
+    padding: 0;
+  }
+
+  body[data-print="check"] .today {
+    padding: 0;
+    background: none;
+    border: none;
+    box-shadow: none;
+  }
+
+  body[data-print="check"] .today-head,
+  body[data-print="check"] .today-list,
+  body[data-print="check"] .today-empty,
+  body[data-print="check"] .check-misses,
+  body[data-print="check"] .daily-check:not(.printing) {
+    display: none !important;
   }
 
   /* '점검표 인쇄하기'(body[data-print="check"])는 점검표만 */
