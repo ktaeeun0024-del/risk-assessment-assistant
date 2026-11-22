@@ -55,7 +55,7 @@ const STOPWORDS = new Set(["작업자", "직원", "공장", "회사", "사람", 
 export const clean = (s: string) => String(s ?? "").replaceAll("_x000D_", "").replace(/\s+/g, " ").trim();
 const stripNumber = (s: string) => s.replace(/^\s*(\d+(\.\d+)*[.)]?|[-·•※○])\s*/, "").trim();
 
-function bigrams(text: string): string[] {
+export function bigrams(text: string): string[] {
   const out: string[] = [];
   for (const word of String(text).match(WORD) ?? []) {
     const ch = Array.from(word);

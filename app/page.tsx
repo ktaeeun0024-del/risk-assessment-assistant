@@ -20,6 +20,7 @@ import { CheckRecords } from "./check-records";
 import { DailyCheck } from "./daily-check";
 import { TodayChecks } from "./today-checks";
 import { SafetySummary } from "./safety-summary";
+import { SifCases } from "./sif-cases";
 
 const LEVEL_CLASS: Record<RiskLevel, string> = { 높음: "high", 보통: "mid", 낮음: "low" };
 
@@ -653,6 +654,7 @@ function ResultView({
         </p>
       </article>
 
+      <SifCases assessment={result.assessment} />
       <DailyCheck
         assessment={result.assessment}
         signedIn={!!me && !me.mustChangePassword}

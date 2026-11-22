@@ -2436,6 +2436,87 @@ main.container:empty {
   vertical-align: middle;
 }
 
+/* 비슷한 실제 사망·중상 사고 (SIF 아카이브) */
+.sif {
+  margin-top: var(--s7);
+}
+
+.sif h2 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin: 0 0 var(--space-xs);
+  font-size: var(--text-section);
+}
+
+.sif .hint {
+  max-width: 70ch;
+  margin: 0;
+}
+
+.sif-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: var(--space-md);
+  margin: var(--space-md) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sif-list > li {
+  padding: var(--space-md) var(--space-lg);
+  color: var(--text);
+  background: var(--surface);
+  border: var(--rule-bar) solid var(--color-ink);
+  border-top: var(--s2) solid var(--high);
+  box-shadow: var(--paper-shadow);
+}
+
+.sif-meta {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+.sif-overview {
+  margin: var(--space-2xs) 0 var(--space-sm);
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.sif-list dl {
+  display: grid;
+  gap: var(--space-2xs);
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: 1.55;
+}
+
+.sif-list dt {
+  font-family: var(--font-label);
+  font-weight: 800;
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.sif-list dd {
+  margin: 0 0 var(--space-2xs);
+}
+
+.sif-measures {
+  white-space: pre-line;
+}
+
+.sif-item {
+  color: var(--muted);
+}
+
+.sif-source {
+  margin: var(--space-sm) 0 0;
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
 /* 회사 평가표: 매일 점검 표시 */
 .daily-tag {
   margin-left: var(--space-xs);
@@ -2756,6 +2837,7 @@ main.container:empty {
   .doc-notes,
   .doc-actions,
   .filter-bar,
+  .sif,
   .history {
     display: none !important;
   }

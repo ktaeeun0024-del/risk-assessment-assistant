@@ -9,7 +9,8 @@
     "eval:build": "tsx eval/build-set.mts",
     "eval": "tsx eval/run.mts",
     "eval:review": "tsx eval/review.mts",
-    "build:edge": "tsx scripts/build-edge.mts"
+    "build:edge": "tsx scripts/build-edge.mts",
+    "data:sif": "tsx scripts/download-sif.mts"
   },
   "dependencies": {
     "next": "^16.4.6",
