@@ -6,7 +6,7 @@
 // 코드 검사: 줄 수가 같은지, 번역문에 한글이 남았는지, 원문과 역번역의 글자 조각이 충분히 겹치는지.
 // 겹침이 낮은 줄은 "확인 필요"로 표시해 그 언어를 아는 동료나 반장이 다시 보게 한다.
 // 번역은 깊이 생각할 일이 아니라서 모델의 생각(reasoning)을 끈다: 크메르어 번역 143초 → 79초 (11/16 시험).
-import { callOpenRouter, DEFAULT_MODEL, DraftError, pickModel, type Message } from "./ai";
+import { callWithFallback, DraftError, type Message } from "./ai";
 import {
   LANGUAGES,
   type KoreanSummary,
@@ -18,7 +18,6 @@ import {
 
 // 원문과 역번역의 겹침이 이보다 낮으면 확인 필요 (짧은 문장·의역을 고려해 낮게 둔다)
 export const BACK_OVERLAP_MIN = 0.3;
-const MODEL = process.env.OPENROUTER_MODEL?.trim() || DEFAULT_MODEL;
 const NO_THINKING = { enabled: false } as const;
 const JSON_SHAPE = '{"title":"...","lines":[{"risk":"...","todo":"..."}]}';
 
@@ -83,7 +82,7 @@ export async function translateLines(
     },
     { role: "user", content: JSON.stringify({ title: source.title, lines: source.lines.map(({ risk, todo }) => ({ risk, todo })) }) },
   ];
-  const res = await callOpenRouter(apiKey, messages, timeLeft(opts.deadline), await pickModel(apiKey, MODEL), NO_THINKING);
+  const res = await callWithFallback(apiKey, messages, timeLeft(opts.deadline), NO_THINKING);
   const parsed = parsePairs(res.content);
   if (!parsed || parsed.lines.length !== source.lines.length) {
     throw new DraftError("번역 답의 형식이 올바르지 않아요. 다시 옮겨 보세요.", 502);
@@ -108,7 +107,7 @@ export async function backCheck(
     },
     { role: "user", content: JSON.stringify({ title: translated.title, lines: translated.lines }) },
   ];
-  const res = await callOpenRouter(apiKey, messages, timeLeft(opts.deadline), await pickModel(apiKey, MODEL), NO_THINKING);
+  const res = await callWithFallback(apiKey, messages, timeLeft(opts.deadline), NO_THINKING);
   const back = parsePairs(res.content);
   if (!back || back.lines.length !== source.lines.length) {
     throw new DraftError("역번역 답의 형식이 올바르지 않아요. 다시 검사해 보세요.", 502);

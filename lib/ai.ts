@@ -24,17 +24,25 @@ const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 export const DEFAULT_MODEL = "nvidia/nemotron-3-ultra-550b-a55b";
 const MODEL = process.env.OPENROUTER_MODEL?.trim() || DEFAULT_MODEL;
 
-// 대체 모델 (11/23): 무료 기본 모델이 멈추는 때가 있다 (11/23 OpenRouter 조회: 최근 30분 가동률 0%, 호출이 5분 넘게 답 없음).
-// 그때 멈춘 모델을 2분 넘게 기다리다 검색 초안으로 넘어가지 않도록, 부르기 전에 상태를 보고 살아 있는 무료 모델로 바꾼다.
-// 대체 모델은 검증 품질이 낮아(11/15 2종 시험: super-vl 19% vs 기본 41%) 기본 모델이 멈췄을 때만 쓰고 화면에 알린다.
-export const FALLBACK_MODELS = ["nvidia/nemotron-3.5-super-vl:free", "nvidia/nemotron-3.5-lightning:free"];
+// 대체 모델 (11/23): 유료 기본 모델을 못 쓸 때(팀 크레딧 소진 402, 요청 과다, 서버 오류, 멈춤) 무료 모델로 넘어간다.
+// 부르기 전에 OpenRouter에서 모델 상태(최근 30분 가동률)를 보고, 멈춘 모델은 건너뛴다.
+// 순서: 같은 모델의 무료판(생각 끄면 예시 작업 46초, 11항목) → 더 빠른 무료 모델(super-vl 11초, lightning).
+// 무료 모델은 모두 생각(reasoning)을 끄고 부른다. 화면에 '무료 모델로 만들었어요'를 알린다.
+export const FALLBACK_MODELS = [
+  `${DEFAULT_MODEL}:free`,
+  "nvidia/nemotron-3.5-super-vl:free",
+  "nvidia/nemotron-3.5-lightning:free",
+];
+// 이 모델은 이만큼 남아 있어야 쓴다 (마감 직전에 넘어갈 때 느린 무료판을 건너뛰고 빠른 모델로)
+const FALLBACK_MIN_MS: Record<string, number> = { [`${DEFAULT_MODEL}:free`]: 70_000 };
 const HEALTH_TTL_MS = 60_000;
-const health = new Map<string, { ok: boolean; at: number }>();
+const DOWN_AFTER_ERROR_MS = 10 * 60_000; // 크레딧 소진·오류가 난 모델은 10분 동안 건너뛴다
+const health = new Map<string, { ok: boolean; until: number }>();
 
 // OpenRouter의 모델 상태 (최근 30분 가동률). 조회에 실패하면 살아 있다고 본다 (조회 때문에 AI를 막지 않게)
 async function modelUp(apiKey: string, model: string): Promise<boolean> {
   const hit = health.get(model);
-  if (hit && Date.now() - hit.at < HEALTH_TTL_MS) return hit.ok;
+  if (hit && Date.now() < hit.until) return hit.ok;
   let ok = true;
   try {
     const res = await fetch(`https://openrouter.ai/api/v1/models/${model}/endpoints`, {
@@ -48,22 +56,53 @@ async function modelUp(apiKey: string, model: string): Promise<boolean> {
   } catch {
     ok = true;
   }
-  health.set(model, { ok, at: Date.now() });
+  health.set(model, { ok, until: Date.now() + HEALTH_TTL_MS });
   return ok;
 }
+const markDown = (model: string) => health.set(model, { ok: false, until: Date.now() + DOWN_AFTER_ERROR_MS });
 
-// 부를 모델 고르기: 기본 모델이 살아 있으면 기본 모델, 멈췄으면 살아 있는 첫 대체 모델
-export async function pickModel(apiKey: string, preferred = MODEL): Promise<string> {
-  if (await modelUp(apiKey, preferred)) return preferred;
-  for (const m of FALLBACK_MODELS) if (m !== preferred && (await modelUp(apiKey, m))) return m;
-  return preferred;
+// 다음으로 쓸 무료 모델 (남은 시간 timeLeftMs 안에 끝낼 수 있는 것만)
+async function nextFallback(apiKey: string, exclude: string, timeLeftMs = Infinity): Promise<string | null> {
+  for (const m of FALLBACK_MODELS) {
+    if (m === exclude || timeLeftMs < (FALLBACK_MIN_MS[m] ?? 0)) continue;
+    if (await modelUp(apiKey, m)) return m;
+  }
+  return null;
 }
 
-const base = (m: string) => m.replace(/:free$/, "");
-// 대체 모델로 만들었으면 화면에 보여 줄 안내 (기본 모델이면 빈 문자열)
+// 부를 모델 고르기: 기본 모델이 살아 있으면 기본 모델, 아니면 살아 있는 첫 무료 모델
+export async function pickModel(apiKey: string, preferred = MODEL): Promise<string> {
+  if (await modelUp(apiKey, preferred)) return preferred;
+  return (await nextFallback(apiKey, preferred)) ?? preferred;
+}
+
+// 기본 모델을 못 쓸 때 바로 거절되는 오류 (크레딧 소진은 DraftError 503으로 바뀌어 온다)
+const isRefusal = (err: unknown) => err instanceof DraftError && [429, 502, 503].includes(err.status);
+
+// 번역처럼 한 번에 끝나는 호출: 기본 모델이 거절하면 무료 모델로 한 번 다시 부른다
+export async function callWithFallback(
+  apiKey: string,
+  messages: Message[],
+  timeoutMs: number,
+  reasoning?: { effort?: "low" | "medium" | "high"; enabled?: boolean; exclude?: boolean },
+): Promise<{ content: string; model: string }> {
+  const model = await pickModel(apiKey);
+  try {
+    return await callOpenRouter(apiKey, messages, timeoutMs, model, model === MODEL ? reasoning : { enabled: false });
+  } catch (err) {
+    if (!isRefusal(err)) throw err;
+    markDown(model);
+    const next = await nextFallback(apiKey, model);
+    if (!next) throw err;
+    console.error("[ai] 기본 모델을 쓸 수 없어 무료 모델로 다시 요청합니다.");
+    return callOpenRouter(apiKey, messages, timeoutMs, next, { enabled: false });
+  }
+}
+
+// 무료 모델로 만들었으면 화면에 보여 줄 안내 (기본 모델이면 빈 문자열)
 export function fallbackModelNotice(model: string): string {
-  return model && base(model) !== base(MODEL) && FALLBACK_MODELS.some((m) => base(m) === base(model))
-    ? "기본 AI 모델이 지금 멈춰 있어 대체 무료 모델로 만들었어요. 기본 모델보다 위험요인을 덜 찾을 수 있으니 더 꼼꼼히 확인해 주세요."
+  return model && model !== MODEL && FALLBACK_MODELS.includes(model)
+    ? "지금은 유료 AI를 쓸 수 없어 무료 AI 모델로 만들었어요. 위험요인을 덜 찾을 수 있으니 더 꼼꼼히 확인해 주세요."
     : "";
 }
 // 배포 사이트의 서버 실행 시간 제한(Netlify 무료는 약 10초)보다 짧게 AI_TIMEOUT_MS를 주면
@@ -319,14 +358,11 @@ export async function aiDraft(
   // 기본 모델이 실패했을 때 대체 모델로 바꾼다 (처음 평가표를 받기 전에만, 한 번만)
   const switchToFallback = async (why: string): Promise<boolean> => {
     if (!canFallback || assessment || model !== MODEL) return false;
-    for (const m of FALLBACK_MODELS) {
-      if (m !== MODEL && (await modelUp(apiKey, m))) {
-        console.error(`[assess] 기본 모델이 ${why} 대체 모델로 다시 요청합니다.`);
-        model = m;
-        return true;
-      }
-    }
-    return false;
+    const next = await nextFallback(apiKey, MODEL, opts.deadline ? opts.deadline - Date.now() : Infinity);
+    if (!next) return false;
+    console.error(`[assess] 기본 모델이 ${why} 무료 모델로 다시 요청합니다.`);
+    model = next;
+    return true;
   };
   while (attempts < 3) {
     const left = opts.deadline ? opts.deadline - Date.now() : TIMEOUT_MS;
@@ -358,8 +394,8 @@ export async function aiDraft(
         attempts--;
         continue;
       }
-      if (err instanceof DraftError && [429, 502, 503].includes(err.status)) {
-        if (canFallback) health.set(MODEL, { ok: false, at: Date.now() });
+      if (isRefusal(err)) {
+        if (canFallback) markDown(MODEL);
         if (await switchToFallback("응답하지 않아")) {
           attempts--;
           continue;

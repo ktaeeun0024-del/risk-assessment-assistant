@@ -11,7 +11,6 @@ import { DraftError } from "@/lib/ai";
 import { checkTranslateJob, jobsEnabled, startJob } from "@/lib/ai-jobs";
 import { AuthError, authErrorResponse, checkSameOrigin, currentUser } from "@/lib/auth";
 import { dbErrorCode } from "@/lib/db";
-import { demoAiLimitMessage, takeDemoAi } from "@/lib/demo";
 import { buildKoreanSummary, isLang, type KoreanSummary, type TranslatedText } from "@/lib/safety-summary";
 import type { Assessment, AssessmentItem } from "@/lib/schema";
 import { backCheck, translateLines } from "@/lib/translate";
@@ -88,12 +87,6 @@ export async function POST(request: Request) {
   }
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "서버에 AI API 키가 설정되지 않았어요." }, { status: 503 });
-  // 체험 계정은 AI를 하루 정해진 횟수까지만 쓴다. 번역 한 번(1단계)을 1번으로 센다 (2단계 검사는 그 번역의 일부)
-  if (user.isDemo && step === "translate") {
-    const allowed = await takeDemoAi(user.companyId).catch(() => false);
-    if (!allowed) return NextResponse.json({ error: demoAiLimitMessage, code: "DEMO_LIMIT" }, { status: 429 });
-  }
-
   if (jobsEnabled()) {
     try {
       const pending =

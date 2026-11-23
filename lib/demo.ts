@@ -2,14 +2,13 @@
 // - '체험 계정으로 둘러보기'를 누르면 체험 회사의 공용 계정으로 로그인된다. 비밀번호가 없어 다른 방법으로는 로그인할 수 없다.
 // - 체험 회사에는 미리 만든 AI 평가표 2개(data/demo_assessments.json, npm run data:demo)와 2주치 점검 기록을 넣어 둔다.
 // - 여러 방문자가 같은 회사를 함께 쓰므로, 날이 바뀐 뒤 처음 들어올 때 처음 상태로 되돌린다.
-// - 비밀번호 변경·직원 관리는 막고(forbidDemo), AI는 하루 DEMO_AI_PER_DAY번까지만 쓴다 (무료 AI 하루 한도를 시연과 나눠 씀).
+// - 비밀번호 변경·직원 관리는 막는다(forbidDemo). AI 사용 횟수는 막지 않는다 (11/23 팀 크레딧, 다 쓰면 무료 모델로 넘어감).
 import seed from "@/data/demo_assessments.json";
 import { buildChecklist } from "./checklist";
-import { db, transaction } from "./db";
+import { transaction } from "./db";
 import type { Assessment, ValidationReport } from "./schema";
 import type { PoolClient } from "pg";
 
-export const DEMO_AI_PER_DAY = 15;
 const DEMO_EMAIL = "demo@banjangnote.invalid"; // 메일이 갈 수 없는 주소 (.invalid)
 const DEMO_COMPANY = "체험 회사 (반장노트)";
 const DEMO_NAME = "체험 반장";
@@ -73,7 +72,7 @@ async function reset(c: PoolClient, companyId: number, userId: number) {
     }
   }
   await c.query(
-    `UPDATE companies SET status = 'approved', demo_day = (now() AT TIME ZONE 'Asia/Seoul')::date, demo_ai_count = 0 WHERE id = $1`,
+    `UPDATE companies SET status = 'approved', demo_day = (now() AT TIME ZONE 'Asia/Seoul')::date WHERE id = $1`,
     [companyId],
   );
 }
@@ -111,18 +110,3 @@ export async function enterDemo(): Promise<number> {
     return userId;
   });
 }
-
-// 체험 회사의 AI 사용 1번을 센다. 오늘 한도를 넘었으면 false
-export async function takeDemoAi(companyId: number): Promise<boolean> {
-  const { rowCount } = await (await db()).query(
-    `UPDATE companies
-        SET demo_ai_count = CASE WHEN demo_ai_day = (now() AT TIME ZONE 'Asia/Seoul')::date THEN demo_ai_count + 1 ELSE 1 END,
-            demo_ai_day = (now() AT TIME ZONE 'Asia/Seoul')::date
-      WHERE id = $1 AND is_demo
-        AND (demo_ai_day IS DISTINCT FROM (now() AT TIME ZONE 'Asia/Seoul')::date OR demo_ai_count < $2)`,
-    [companyId, DEMO_AI_PER_DAY],
-  );
-  return (rowCount ?? 0) > 0;
-}
-
-export const demoAiLimitMessage = `체험 계정의 오늘 AI 사용 횟수(${DEMO_AI_PER_DAY}번)를 다 썼어요. 회사 가입을 하면 계속 쓸 수 있어요.`;

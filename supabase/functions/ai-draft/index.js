@@ -112,12 +112,18 @@ function validate(assessment) {
 var OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 var DEFAULT_MODEL = "nvidia/nemotron-3-ultra-550b-a55b";
 var MODEL = process.env.OPENROUTER_MODEL?.trim() || DEFAULT_MODEL;
-var FALLBACK_MODELS = ["nvidia/nemotron-3.5-super-vl:free", "nvidia/nemotron-3.5-lightning:free"];
+var FALLBACK_MODELS = [
+  `${DEFAULT_MODEL}:free`,
+  "nvidia/nemotron-3.5-super-vl:free",
+  "nvidia/nemotron-3.5-lightning:free"
+];
+var FALLBACK_MIN_MS = { [`${DEFAULT_MODEL}:free`]: 7e4 };
 var HEALTH_TTL_MS = 6e4;
+var DOWN_AFTER_ERROR_MS = 10 * 6e4;
 var health = /* @__PURE__ */ new Map();
 async function modelUp(apiKey, model) {
   const hit = health.get(model);
-  if (hit && Date.now() - hit.at < HEALTH_TTL_MS) return hit.ok;
+  if (hit && Date.now() < hit.until) return hit.ok;
   let ok = true;
   try {
     const res = await fetch(`https://openrouter.ai/api/v1/models/${model}/endpoints`, {
@@ -131,13 +137,34 @@ async function modelUp(apiKey, model) {
   } catch {
     ok = true;
   }
-  health.set(model, { ok, at: Date.now() });
+  health.set(model, { ok, until: Date.now() + HEALTH_TTL_MS });
   return ok;
+}
+var markDown = (model) => health.set(model, { ok: false, until: Date.now() + DOWN_AFTER_ERROR_MS });
+async function nextFallback(apiKey, exclude, timeLeftMs = Infinity) {
+  for (const m of FALLBACK_MODELS) {
+    if (m === exclude || timeLeftMs < (FALLBACK_MIN_MS[m] ?? 0)) continue;
+    if (await modelUp(apiKey, m)) return m;
+  }
+  return null;
 }
 async function pickModel(apiKey, preferred = MODEL) {
   if (await modelUp(apiKey, preferred)) return preferred;
-  for (const m of FALLBACK_MODELS) if (m !== preferred && await modelUp(apiKey, m)) return m;
-  return preferred;
+  return await nextFallback(apiKey, preferred) ?? preferred;
+}
+var isRefusal = (err) => err instanceof DraftError && [429, 502, 503].includes(err.status);
+async function callWithFallback(apiKey, messages, timeoutMs, reasoning) {
+  const model = await pickModel(apiKey);
+  try {
+    return await callOpenRouter(apiKey, messages, timeoutMs, model, model === MODEL ? reasoning : { enabled: false });
+  } catch (err) {
+    if (!isRefusal(err)) throw err;
+    markDown(model);
+    const next = await nextFallback(apiKey, model);
+    if (!next) throw err;
+    console.error("[ai] 기본 모델을 쓸 수 없어 무료 모델로 다시 요청합니다.");
+    return callOpenRouter(apiKey, messages, timeoutMs, next, { enabled: false });
+  }
 }
 var TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS) > 0 ? Number(process.env.AI_TIMEOUT_MS) : 9e4;
 var SYSTEM_PROMPT = `너는 50인 미만 제조 사업장의 위험성평가를 돕는 산업안전 전문가야.
@@ -324,14 +351,11 @@ ${reference}
   let repaired = false;
   const switchToFallback = async (why) => {
     if (!canFallback || assessment || model !== MODEL) return false;
-    for (const m of FALLBACK_MODELS) {
-      if (m !== MODEL && await modelUp(apiKey, m)) {
-        console.error(`[assess] 기본 모델이 ${why} 대체 모델로 다시 요청합니다.`);
-        model = m;
-        return true;
-      }
-    }
-    return false;
+    const next = await nextFallback(apiKey, MODEL, opts.deadline ? opts.deadline - Date.now() : Infinity);
+    if (!next) return false;
+    console.error(`[assess] 기본 모델이 ${why} 무료 모델로 다시 요청합니다.`);
+    model = next;
+    return true;
   };
   while (attempts < 3) {
     const left = opts.deadline ? opts.deadline - Date.now() : TIMEOUT_MS;
@@ -359,8 +383,8 @@ ${reference}
         attempts--;
         continue;
       }
-      if (err instanceof DraftError && [429, 502, 503].includes(err.status)) {
-        if (canFallback) health.set(MODEL, { ok: false, at: Date.now() });
+      if (isRefusal(err)) {
+        if (canFallback) markDown(MODEL);
         if (await switchToFallback("응답하지 않아")) {
           attempts--;
           continue;
@@ -409,7 +433,6 @@ var LANGUAGES = {
 
 // lib/translate.ts
 var BACK_OVERLAP_MIN = 0.3;
-var MODEL2 = process.env.OPENROUTER_MODEL?.trim() || DEFAULT_MODEL;
 var NO_THINKING = { enabled: false };
 var JSON_SHAPE = '{"title":"...","lines":[{"risk":"...","todo":"..."}]}';
 function parsePairs(content) {
@@ -459,7 +482,7 @@ async function translateLines(apiKey, source, lang, opts = {}) {
     },
     { role: "user", content: JSON.stringify({ title: source.title, lines: source.lines.map(({ risk, todo }) => ({ risk, todo })) }) }
   ];
-  const res = await callOpenRouter(apiKey, messages, timeLeft(opts.deadline), await pickModel(apiKey, MODEL2), NO_THINKING);
+  const res = await callWithFallback(apiKey, messages, timeLeft(opts.deadline), NO_THINKING);
   const parsed = parsePairs(res.content);
   if (!parsed || parsed.lines.length !== source.lines.length) {
     throw new DraftError("번역 답의 형식이 올바르지 않아요. 다시 옮겨 보세요.", 502);
@@ -476,7 +499,7 @@ async function backCheck(apiKey, source, translated, opts = {}) {
     },
     { role: "user", content: JSON.stringify({ title: translated.title, lines: translated.lines }) }
   ];
-  const res = await callOpenRouter(apiKey, messages, timeLeft(opts.deadline), await pickModel(apiKey, MODEL2), NO_THINKING);
+  const res = await callWithFallback(apiKey, messages, timeLeft(opts.deadline), NO_THINKING);
   const back = parsePairs(res.content);
   if (!back || back.lines.length !== source.lines.length) {
     throw new DraftError("역번역 답의 형식이 올바르지 않아요. 다시 검사해 보세요.", 502);

@@ -144,11 +144,9 @@ const SCHEMA = `
   ALTER TABLE ai_jobs ADD COLUMN IF NOT EXISTS payload jsonb;
 
   -- 체험 계정 (11/23): 포스터 QR로 들어온 사람이 로그인 없이 회사 기능을 둘러보는 체험 회사 (lib/demo.ts).
-  -- demo_day: 마지막으로 처음 상태로 되돌린 날. demo_ai_*: 체험 회사의 하루 AI 사용 횟수
+  -- demo_day: 마지막으로 처음 상태로 되돌린 날
   ALTER TABLE companies ADD COLUMN IF NOT EXISTS is_demo boolean NOT NULL DEFAULT false;
   ALTER TABLE companies ADD COLUMN IF NOT EXISTS demo_day date;
-  ALTER TABLE companies ADD COLUMN IF NOT EXISTS demo_ai_day date;
-  ALTER TABLE companies ADD COLUMN IF NOT EXISTS demo_ai_count integer NOT NULL DEFAULT 0;
 
   ALTER TABLE ai_jobs ENABLE ROW LEVEL SECURITY;
   ALTER TABLE email_codes ENABLE ROW LEVEL SECURITY;

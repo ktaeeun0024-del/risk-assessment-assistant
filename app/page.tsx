@@ -259,7 +259,7 @@ export default function Home() {
       )}
       {loading && effectiveMode === "ai" && (
         <p className="hint" aria-live="polite">
-          AI가 평가표를 쓰고 있어요. 보통 30초~1분 걸려요.{waitSec > 0 && ` (${waitSec}초째 작성 중)`}
+          AI가 평가표를 쓰고 있어요. 잠시만 기다려 주세요.{waitSec > 0 && ` (${waitSec}초째 작성 중)`}
         </p>
       )}
       {error && (
@@ -343,7 +343,7 @@ export default function Home() {
         <div className="container demo-note">
           <p>
             <b>체험 계정이에요.</b> 미리 넣어 둔 평가표 2개와 2주치 작업 전 점검 기록으로 회사 기능을 둘러볼 수 있어요. 다른
-            방문자와 같은 회사를 함께 쓰고, 매일 처음 상태로 돌아가요. AI 초안·번역은 하루 15번까지예요.
+            방문자와 같은 회사를 함께 쓰고, 매일 처음 상태로 돌아가요.
           </p>
         </div>
       )}
