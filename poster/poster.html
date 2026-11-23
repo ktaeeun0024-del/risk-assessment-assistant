@@ -174,14 +174,14 @@ section > header p { margin-left: auto; font-size: 4.2mm; color: var(--muted); m
 .learn .num { font-family: "Oswald", sans-serif; font-weight: 700; color: var(--ink); }
 
 /* 바닥 띠: 데이터 · 기술 · 한계 · QR · 출처 */
-.foot { margin-top: 3mm; padding: 5mm var(--pad) 4mm; color: var(--on-ink); background: var(--ink); border-top: 1.6mm solid var(--accent); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1fr) 56mm; gap: 7mm; }
+.foot { margin-top: 3mm; padding: 4.5mm var(--pad) 3mm; color: var(--on-ink); background: var(--ink); border-top: 1.6mm solid var(--accent); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1fr) 56mm; gap: 7mm; }
 .foot h3 { font-size: 5.6mm; color: var(--on-ink); }
 .foot p, .foot li { font-size: 3.5mm; line-height: 1.5; color: var(--on-ink-muted); }
 .foot ul { margin: 1.8mm 0 0; padding-left: 4.5mm; }
 .foot p { margin-top: 1.8mm; }
 .foot b { color: var(--on-ink); font-weight: 700; }
-.qr { display: grid; justify-items: center; align-content: start; gap: 2.5mm; text-align: center; }
-.qr .code { width: 33mm; height: 33mm; padding: 3mm; background: var(--on-ink); }
+.qr { display: grid; justify-items: center; align-content: start; gap: 1.6mm; text-align: center; }
+.qr .code { width: 26mm; height: 26mm; padding: 2.2mm; background: var(--on-ink); }
 .qr .code img { width: 100%; height: 100%; display: block; }
 .qr p { margin: 0; font-size: 3.8mm; color: var(--on-ink); font-weight: 700; }
 .qr span { font-size: 3mm; color: var(--on-ink-muted); white-space: nowrap; }
@@ -227,7 +227,7 @@ section > header p { margin-left: auto; font-size: 4.2mm; color: var(--muted); m
       <div class="flow">
         <div class="step"><div class="n">1</div><h3>말로 설명</h3><p>설비·물질·인원·지금의 안전조치를 평소 말투로</p></div>
         <div class="step"><div class="n">2</div><h3>근거 찾기</h3><p>공공 표준모델에서 비슷한 작업의 위험요인·법 조항을 찾아 AI에게 건넨다</p></div>
-        <div class="step"><div class="n">3</div><h3>AI 초안</h3><p>KRAS 양식, 3×3 빈도·강도법. 실패하면 검색 초안으로 대신</p></div>
+        <div class="step"><div class="n">3</div><h3>AI 초안</h3><p>KRAS 양식, 3×3 빈도·강도법. 1건 16~29초. 안 되면 무료 모델·검색 초안으로</p></div>
         <div class="step"><div class="n">4</div><h3>검사 · 매일 점검</h3><p>검사를 통과한 표만 인쇄. 대책은 작업 전 체크리스트로 매일 확인</p></div>
       </div>
       <div class="how-grid">
@@ -296,14 +296,27 @@ section > header p { margin-left: auto; font-size: 4.2mm; color: var(--muted); m
             <dt>105초</dt><dd>1건 걸린 시간 (중앙값)</dd>
             <dt>0원</dt><dd>검증 비용 (같은 모델의 무료판, nvidia nemotron-3-ultra, OpenRouter)</dd>
           </dl>
-          <p class="how"><b>판정 기준</b> 대상과 원인까지 같아야 같은 위험. <b>확실하지 않으면 틀림</b>, 설명에 없는 설비를 지어낸 항목도 틀림. 숫자를 부풀리지 않는 보수적 판정이다. 정답 파일과 그 복사본은 검색에서 빼서 &lsquo;처음 보는 작업&rsquo;으로 쟀다.</p>
+          <p class="how"><b>판정 기준</b> 대상과 원인까지 같아야 같은 위험. <b>확실하지 않으면 틀림</b>, 설명에 없는 설비를 지어낸 항목도 틀림. 정답 파일은 검색에서 빼서 &lsquo;처음 보는 작업&rsquo;으로 쟀다.</p>
         </div>
       </div>
     </section>
 
     <div class="trio">
       <section>
-        <header><span class="no">04</span><h2>외국인 근로자용 요약</h2></header>
+        <header><span class="no">04</span><h2>현장에서 계속 쓰기</h2></header>
+        <div class="box learn">
+          <article>
+            <h3>매일 작업 전 점검</h3>
+            <p>감소대책이 작업 전 체크리스트가 되고, 기록은 날짜별·한 달 CSV로 남는다. 자주 못 하는 대책(최근 10번 중 3번 이상)은 알려 평가표를 고치게 한다.</p>
+          </article>
+          <article>
+            <h3>비슷한 실제 사망·중상 사고</h3>
+            <p>안전보건공단 사례 <span class="num">2,573건</span>에서 평가표 항목과 비슷한 사고를 최대 3건 보여 준다. 예: 그라인더 숫돌 파편, 철판 코일 낙하</p>
+          </article>
+        </div>
+      </section>
+      <section>
+        <header><span class="no">05</span><h2>외국인 근로자용 요약</h2></header>
         <div class="box">
           <p>위험성 높은 6줄을 코드가 쉬운 한국어로 정리하고 AI는 번역만. 번역문을 <b>다시 한국어로 옮겨</b> 원문과 비교해, 뜻이 바뀐 줄은 막는다.</p>
           <table class="back">
@@ -317,28 +330,15 @@ section > header p { margin-left: auto; font-size: 4.2mm; color: var(--muted); m
         </div>
       </section>
       <section>
-        <header><span class="no">05</span><h2>회사 계정과 보안</h2></header>
+        <header><span class="no">06</span><h2>회사 계정과 체험</h2></header>
         <div class="box">
           <ul class="sec">
-            <li><span><b>회사별 기록 분리</b>: 평가표는 우리 회사 계정끼리만 본다</span></li>
-            <li><span><b>국세청 확인</b>: 사업자 상태 + 진위확인(대표자 성명·개업일자). 실무 관리자도 가입 가능</span></li>
-            <li><span><b>사이트 관리자 승인</b>: 승인 전 회사 대표 전화로 신청 사실 확인</span></li>
-            <li><span><b>번호 선점 방지</b>: 승인된 회사만 사업자번호 하나에 하나</span></li>
-            <li><span><b>직원은 초대로</b>: 이메일 인증번호, 담당자가 바뀌면 관리자 넘기기</span></li>
+            <li><span><b>회사별 기록 분리</b>: 평가표·점검 기록은 우리 회사 계정끼리만 본다</span></li>
+            <li><span><b>국세청 확인</b>: 사업자 상태 + 진위확인(대표자 성명·개업일자)</span></li>
+            <li><span><b>관리자 승인</b>: 회사 대표 전화로 확인, 사업자번호 하나에 승인 하나</span></li>
+            <li><span><b>직원은 초대로</b>: 이메일 인증번호로 가입</span></li>
+            <li><span><b>체험 계정</b>: 가입 없이 공용 체험 회사로 회사 기능을 둘러본다. 매일 처음 상태로, 계정·직원 설정은 막는다</span></li>
           </ul>
-        </div>
-      </section>
-      <section>
-        <header><span class="no">06</span><h2>검증하며 알게 된 것</h2></header>
-        <div class="box learn">
-          <article>
-            <h3>자동 채점만 믿었으면 차이를 절반으로 봤다</h3>
-            <p>글자 겹침 채점은 AI <span class="num">27.6%</span> vs 검색 <span class="num">15.6%</span>. 사람이 판정하니 <span class="num">32.0%</span> vs <span class="num">8.9%</span>. 검색은 단어만 비슷한 작업을 가져와 부풀었다.</p>
-          </article>
-          <article>
-            <h3>프롬프트를 고쳐도 찾는 양은 그대로</h3>
-            <p>지어낸 설비는 줄었지만, 같은 9종 재현율은 <span class="num">32.0%</span> → <span class="num">30.8%</span>. 개선은 사람 판정으로 확인한다. 실패한 답도 직접 열어 봤다: &lsquo;AI 빈 답&rsquo;은 모델이 아니라 우리 코드의 시간 제한(정확히 120초) 탓이었다.</p>
-          </article>
         </div>
       </section>
     </div>
@@ -349,6 +349,7 @@ section > header p { margin-left: auto; font-size: 4.2mm; color: var(--muted); m
     <div>
       <h3>데이터와 방법</h3>
       <p><b>한국가스공사 위험성평가 표준모델</b> (공공데이터포털, 이용 제한 없음): 3,712행, 작업 61종, 법 조항 148종</p>
+      <p><b>안전보건공단 SIF 아카이브</b>: 사망·중상 사고 사례 2,573건</p>
       <p>위험성 판단: 고용노동부 고시 제2023-19호의 3×3 빈도·강도법</p>
     </div>
     <div>
@@ -370,7 +371,7 @@ section > header p { margin-left: auto; font-size: 4.2mm; color: var(--muted); m
       <span class="demo">로그인 없이 회사 기능까지:<br>첫 화면 ‘체험 계정으로 둘러보기’</span>
       <span>sage-centaur-becf16.netlify.app</span>
     </div>
-    <p class="sources">출처: 뉴시스 2025-08-01 · 이투데이 2023-03-21(한국경영자총협회 조사) · 뉴시스 2023-12-18(중소기업중앙회 조사) · MTN 2026-09-17(고용노동부 자료) · 공공데이터포털 한국가스공사 위험성평가 표준모델 · 고용노동부 고시 제2023-19호</p>
+    <p class="sources">출처: 뉴시스 2025-08-01 · 이투데이 2023-03-21(한국경영자총협회 조사) · 뉴시스 2023-12-18(중소기업중앙회 조사) · MTN 2026-09-17(고용노동부 자료) · 공공데이터포털 한국가스공사 위험성평가 표준모델 · 안전보건공단 SIF 아카이브 · 고용노동부 고시 제2023-19호</p>
   </footer>
 </div>
 </body>
