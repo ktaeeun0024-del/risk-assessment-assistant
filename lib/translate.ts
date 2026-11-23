@@ -77,7 +77,7 @@ export async function translateLines(
         `너는 한국 공장에서 일하는 외국인 근로자에게 안전 안내문을 옮기는 번역가야. ${target.name}(${target.native})로 옮겨.\n` +
         "- 한국어를 잘 모르는 사람이 읽는다. 쉬운 단어와 짧은 문장으로 쓴다.\n" +
         "- 뜻을 더하거나 빼지 마. 기계·물질 이름은 그 언어에서 흔히 쓰는 말로, 없으면 소리 나는 대로 쓴다.\n" +
-        "- 숫자와 단위는 그대로 둔다. 한글을 남기지 마.\n" +
+        "- 숫자와 단위는 그대로 둔다. 한글과 한자를 남기지 마.\n" +
         `- 다른 말 없이 같은 형태의 JSON 하나만 답해: ${JSON_SHAPE} (줄 수와 순서는 그대로)`,
     },
     { role: "user", content: JSON.stringify({ title: source.title, lines: source.lines.map(({ risk, todo }) => ({ risk, todo })) }) },
@@ -98,16 +98,35 @@ export async function backCheck(
   opts: { deadline?: number } = {},
 ): Promise<TranslationResult> {
   const target = LANGUAGES[translated.lang];
+  // 11/23: 유료 모델에 생각을 끄고 부르면 한국어로 옮기지 않고 받은 문장을 그대로 돌려줄 때가 있었다(베트남어 6줄 모두 겹침 0).
+  // 그래서 할 일을 사용자 말에도 한 번 더 적고, 답에 한글이 거의 없으면 한 번 다시 시킨다.
   const messages: Message[] = [
     {
       role: "system",
       content:
-        `아래 ${target.name} 안전 안내문을 한국어로 직역해. 뜻을 고치거나 보태지 말고 쓰인 그대로 옮겨.\n` +
+        `너는 번역을 검사하는 사람이야. 사용자가 주는 ${target.name} 안전 안내문을 한국어로 직역해. 뜻을 고치거나 보태지 말고 쓰인 그대로 옮겨.\n` +
+        `답의 title과 모든 risk·todo는 한국어(한글)로만 써. ${target.name} 문장을 그대로 베끼면 안 돼.\n` +
         `다른 말 없이 같은 형태의 JSON 하나만 답해: ${JSON_SHAPE} (줄 수와 순서는 그대로)`,
     },
-    { role: "user", content: JSON.stringify({ title: translated.title, lines: translated.lines }) },
+    {
+      role: "user",
+      content: `다음 ${target.name} 안내문을 한국어로 직역해 줘.\n${JSON.stringify({ title: translated.title, lines: translated.lines })}`,
+    },
   ];
-  const res = await callWithFallback(apiKey, messages, timeLeft(opts.deadline), NO_THINKING);
+  let res = await callWithFallback(apiKey, messages, timeLeft(opts.deadline), NO_THINKING);
+  const korean = (c: string) => {
+    const b = parsePairs(c);
+    return !!b && b.lines.filter((l) => HANGUL.test(l.risk) && HANGUL.test(l.todo)).length >= Math.ceil(b.lines.length / 2);
+  };
+  if (translated.lang !== "en" && !korean(res.content)) {
+    console.error("[translate] 역번역이 한국어가 아니어서 한 번 다시 요청합니다.");
+    messages.push(
+      { role: "assistant", content: res.content },
+      { role: "user", content: "한국어로 옮기지 않았어. 같은 JSON 형태로, 모든 문장을 한국어(한글)로 직역해서 다시 답해." },
+    );
+    res = await callWithFallback(apiKey, messages, timeLeft(opts.deadline), NO_THINKING);
+    if (!korean(res.content)) throw new DraftError("역번역을 한국어로 받지 못했어요. 다시 검사해 보세요.", 502);
+  }
   const back = parsePairs(res.content);
   if (!back || back.lines.length !== source.lines.length) {
     throw new DraftError("역번역 답의 형식이 올바르지 않아요. 다시 검사해 보세요.", 502);
@@ -120,6 +139,7 @@ export async function backCheck(
     const notes: string[] = [];
     if (!t.risk || !t.todo) notes.push("번역이 비어 있어요");
     if (translated.lang !== "en" && (HANGUL.test(t.risk) || HANGUL.test(t.todo))) notes.push("번역문에 한글이 남아 있어요");
+    if (/[\u4e00-\u9fff]/.test(t.risk + t.todo)) notes.push("번역문에 한자가 섞여 있어요");
     if (ov < BACK_OVERLAP_MIN) notes.push("다시 한국어로 옮긴 뜻이 원문과 많이 달라요");
     return {
       risk: t.risk,

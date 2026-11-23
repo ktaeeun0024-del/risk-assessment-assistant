@@ -57,12 +57,12 @@ h1, h2, h3 { margin: 0; font-family: var(--display); font-weight: 800; font-synt
 .by { text-align: right; font-size: 4.6mm; color: var(--on-ink-muted); line-height: 1.4; }
 .by strong { display: block; font-size: 7mm; color: var(--on-ink); font-weight: 800; }
 
-main { padding: 6mm var(--pad) 0; display: grid; gap: 5.5mm; align-content: start; }
+main { padding: 5mm var(--pad) 0; display: grid; gap: 4.5mm; align-content: start; }
 
 /* 첫 화면: 제목 + 한 문장 + 실제 앱 화면 */
-.hero { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 0.62fr); gap: var(--gap); align-items: center; }
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--gap); align-items: end; }
 .hero h1 { font-size: 16mm; line-height: 1.04; }
-.hero .lead { margin-top: 4mm; font-size: 5.4mm; line-height: 1.45; color: var(--ink-2); font-weight: 500; }
+.hero .lead { margin-top: 0; font-size: 5.4mm; line-height: 1.45; color: var(--ink-2); font-weight: 500; }
 .hero .lead strong { color: var(--ink); font-weight: 800; }
 .motto { display: inline-block; margin-top: 4mm; padding: 2.2mm 4mm; font-size: 5.6mm; font-weight: 800; color: var(--ink); background: var(--accent); box-shadow: 0 1.2mm 0 var(--accent-deep); }
 .shot { margin: 0; border: 0.8mm solid var(--ink); box-shadow: var(--shadow); background: var(--plate); }
@@ -84,13 +84,13 @@ section > header p { margin-left: auto; font-size: 4.2mm; color: var(--muted); m
 .stat .src { margin-top: 1.5mm; font-size: 3.2mm; font-weight: 400; color: var(--plate-muted); line-height: 1.35; }
 
 /* 2 해결: 흐름 + 원칙 */
-.how-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: var(--gap); align-items: start; margin-top: 4mm; }
+.how-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: var(--gap); align-items: start; margin-top: 3.5mm; }
 .flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 0.6mm solid var(--ink); border-bottom: 0.6mm solid var(--ink); }
-.step { padding: 3mm 4mm 3.5mm; border-left: 0.5mm solid var(--rule); }
+.step { padding: 2.5mm 4mm 3mm; border-left: 0.5mm solid var(--rule); }
 .step:first-child { padding-left: 0; border-left: none; }
 .step .n { font-family: "Oswald", sans-serif; font-size: 9mm; line-height: 1; color: var(--accent-deep); }
 .step h3 { margin-top: 1mm; font-family: var(--body); font-size: 5.6mm; font-weight: 800; letter-spacing: -0.02em; }
-.step p { margin-top: 1.5mm; font-size: 4.7mm; line-height: 1.4; font-weight: 500; color: var(--ink); }
+.step p { margin-top: 1.2mm; font-size: 4.4mm; line-height: 1.4; font-weight: 500; color: var(--ink); }
 .mshot { margin-top: 0; }
 .check { padding: 5mm 5.5mm; background: var(--plate); border: var(--bar) solid var(--ink); box-shadow: var(--shadow); }
 .check h3 { font-size: 7mm; }
@@ -187,6 +187,38 @@ section > header p { margin-left: auto; font-size: 4.2mm; color: var(--muted); m
 .qr span { font-size: 3mm; color: var(--on-ink-muted); white-space: nowrap; }
 .qr .demo { white-space: normal; line-height: 1.4; color: var(--on-ink); }
 .sources { grid-column: 1 / -1; margin-top: 0; padding-top: 2.5mm; border-top: 0.4mm solid oklch(36% 0.006 270); font-size: 3mm; line-height: 1.45; color: var(--on-ink-muted); }
+
+/* 01 문제: 현장에서 본 문제 3가지 */
+.pains { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6mm; margin-top: 3mm; }
+.pain { padding: 3mm 4mm; border-left: 1.6mm solid var(--accent); background: var(--paper-2); }
+.pain b { display: block; font-size: 5mm; font-weight: 800; }
+.pain p { margin-top: 0.8mm; font-size: 3.7mm; line-height: 1.45; color: var(--ink-2); }
+
+/* 02 핵심 기능: 화면 캡처 카드 */
+.feats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5mm; margin-top: 4.5mm; }
+.feat { display: grid; grid-template-rows: auto auto 1fr; padding: 4mm; background: var(--plate); border: 0.8mm solid var(--ink); box-shadow: var(--shadow); }
+.feat h3 { display: flex; align-items: center; gap: 2.5mm; font-family: var(--body); font-size: 5.4mm; font-weight: 800; letter-spacing: -0.02em; }
+.feat h3 span { display: grid; place-items: center; width: 7mm; height: 7mm; font-family: "Oswald", sans-serif; font-size: 4.6mm; color: var(--ink); background: var(--accent); }
+.feat > p { margin-top: 1.8mm; font-size: 3.9mm; line-height: 1.45; color: var(--ink-2); }
+.feat .frame { margin-top: 2.5mm; height: 33mm; overflow: hidden; border: 0.5mm solid var(--ink); background: var(--paper); }
+.feat .frame img { display: block; width: 100%; height: auto; }
+.strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4mm; margin: 4mm 0 0; padding: 2.5mm 0; list-style: none; border-top: 0.5mm solid var(--ink); border-bottom: 0.5mm solid var(--ink); }
+.strip li { font-size: 3.8mm; line-height: 1.4; color: var(--ink-2); }
+.strip b { display: block; font-size: 4.3mm; color: var(--ink); font-weight: 800; }
+
+/* 03 기대 효과 */
+.effects { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6mm; margin-top: 5mm; }
+.effect { padding: 3.5mm 4.5mm; background: var(--ink); color: var(--on-ink); }
+.effect .fig { font-family: "Oswald", "Pretendard Variable", sans-serif; font-size: 10mm; line-height: 1; color: var(--accent); font-weight: 700; }
+.effect .fig small { font-size: 5mm; margin-left: 0.5mm; }
+.effect p { margin-top: 1.8mm; font-size: 3.8mm; line-height: 1.45; color: var(--on-ink-muted); }
+.effect b { display: block; color: var(--on-ink); font-size: 4.4mm; font-weight: 800; }
+
+.verify .effects { grid-template-columns: 1fr 1fr; margin-top: 0; gap: 4mm; align-self: stretch; }
+.vfacts { font-size: 4mm; line-height: 1.45; color: var(--ink-2); }
+.vfacts b { font-family: "Oswald", sans-serif; font-size: 6mm; color: var(--ink); }
+.vhow { font-size: 3.7mm; line-height: 1.5; color: var(--muted); }
+.vhow b { color: var(--ink); }
 </style>
 </head>
 <body>
@@ -201,29 +233,30 @@ section > header p { margin-left: auto; font-size: 4.2mm; color: var(--muted); m
 
   <main>
     <div class="hero">
+      <h1>작업을 말로 설명하면<br>위험성평가표가 나온다</h1>
       <div>
-        <h1>작업을 말로 설명하면<br>위험성평가표가 나온다</h1>
-        <p class="lead">안전 담당자가 없는 <strong>50인 미만 공장의 반장·사업주</strong>가 하는 일을 평소 말투로 적으면, <strong>유해·위험요인, 위험성, 감소대책, 관련 법 조항</strong>까지 정리한 초안이 나옵니다.</p>
+        <p class="lead">안전 담당자가 없는 <strong>50인 미만 공장의 반장·사업주</strong>가 하는 일을 평소 말투로 적으면, <strong>유해·위험요인, 위험성, 감소대책, 관련 법 조항</strong>까지 정리한 초안이 나옵니다. 만든 평가표는 <strong>매일 작업 전 점검</strong>으로 이어지고, <strong>외국인 근로자의 말</strong>로 옮겨집니다.</p>
         <p class="motto">AI가 쓰고, 코드가 검증한다</p>
       </div>
-      <figure class="shot">
-        <img src="img/app-input.png" alt="반장노트 첫 화면: 작업 설명 칸과 위험성 점수 기준표">
-        <figcaption>실제 화면 · 작업 설명 칸(왼쪽)과 위험성 점수 기준표(오른쪽)</figcaption>
-      </figure>
     </div>
 
     <section>
-      <header><span class="no">01</span><h2>왜 필요한가</h2><p>작은 사업장일수록 사고는 많고, 평가를 할 사람은 없다</p></header>
+      <header><span class="no">01</span><h2>문제: 왜 시작했나</h2><p>작은 사업장일수록 사고는 많고, 평가를 할 사람은 없다</p></header>
       <div class="stats">
         <div class="stat"><div class="fig">80<small>%</small></div><p>산재 사망의 약 80%가 50인 미만 사업장에서</p><p class="src">뉴시스, 2025-08-01</p></div>
         <div class="stat"><div class="fig">30.1<small>%</small></div><p>50인 미만 기업 3곳 중 1곳은 위험성평가를 하지 않는다. 이유는 전문인력 부족 등</p><p class="src">한국경영자총협회 조사 (이투데이, 2023-03-21)</p></div>
         <div class="stat"><div class="fig">80.0<small>%</small></div><p>50인 미만 중소기업 중 중대재해처벌법 대응 준비가 안 된 곳</p><p class="src">중소기업중앙회 조사 (뉴시스, 2023-12-18)</p></div>
         <div class="stat"><div class="fig">102<small>명</small></div><p>2024년 외국인 근로자 산재 사망 (2022년 85명)</p><p class="src">고용노동부 자료 (MTN, 2026-09-17)</p></div>
       </div>
+      <div class="pains">
+        <div class="pain"><b>평가할 사람이 없다</b><p>안전 담당자가 없어 위험성평가를 미루거나 양식만 채운다. 법은 모든 사업장에 평가를 요구한다.</p></div>
+        <div class="pain"><b>한 번 쓰고 끝난다</b><p>평가표를 만들어도 감소대책을 매일 지키는지 확인할 방법이 없다. 사고는 매일의 작업에서 난다.</p></div>
+        <div class="pain"><b>근로자가 읽지 못한다</b><p>외국인 근로자는 한국어 평가표를 읽기 어렵다. 위험을 알아야 대책을 지킨다.</p></div>
+      </div>
     </section>
 
     <section>
-      <header><span class="no">02</span><h2>어떻게 돕나</h2><p>공공 데이터는 무료, AI는 평가표 1건에 약 3센트</p></header>
+      <header><span class="no">02</span><h2>핵심 기능</h2><p>공공 데이터는 무료, AI는 평가표 1건에 약 3센트</p></header>
       <div class="flow">
         <div class="step"><div class="n">1</div><h3>말로 설명</h3><p>설비·물질·인원·지금의 안전조치를 평소 말투로</p></div>
         <div class="step"><div class="n">2</div><h3>근거 찾기</h3><p>공공 표준모델에서 비슷한 작업의 위험요인·법 조항을 찾아 AI에게 건넨다</p></div>
@@ -232,7 +265,7 @@ section > header p { margin-left: auto; font-size: 4.2mm; color: var(--muted); m
       </div>
       <div class="how-grid">
         <div>
-                    <div class="mx-plate">
+          <div class="mx-plate">
             <div class="mx-row"><div class="mx"><p class="mx-title">지금</p><div class="mx-grid"><span class="ylab">치명 <i>3</i></span><div class="cell mid none"><b>3</b><span>–</span></div><div class="cell high"><b>6</b><span>6개</span></div><div class="cell high"><b>9</b><span>4개</span></div><span class="ylab">휴업 <i>2</i></span><div class="cell low none"><b>2</b><span>–</span></div><div class="cell mid"><b>4</b><span>5개</span></div><div class="cell high"><b>6</b><span>3개</span></div><span class="ylab">경미 <i>1</i></span><div class="cell low none"><b>1</b><span>–</span></div><div class="cell low none"><b>2</b><span>–</span></div><div class="cell mid none"><b>3</b><span>–</span></div><span></span><span class="xlab">드묾 <i>1</i></span><span class="xlab">가끔 <i>2</i></span><span class="xlab">자주 <i>3</i></span></div></div><span class="mx-arrow" aria-hidden="true">→</span><div class="mx"><p class="mx-title">대책을 하면</p><div class="mx-grid"><span class="ylab">치명 <i>3</i></span><div class="cell mid"><b>3</b><span>10개</span></div><div class="cell high none"><b>6</b><span>–</span></div><div class="cell high none"><b>9</b><span>–</span></div><span class="ylab">휴업 <i>2</i></span><div class="cell low"><b>2</b><span>8개</span></div><div class="cell mid none"><b>4</b><span>–</span></div><div class="cell high none"><b>6</b><span>–</span></div><span class="ylab">경미 <i>1</i></span><div class="cell low none"><b>1</b><span>–</span></div><div class="cell low none"><b>2</b><span>–</span></div><div class="cell mid none"><b>3</b><span>–</span></div><span></span><span class="xlab">드묾 <i>1</i></span><span class="xlab">가끔 <i>2</i></span><span class="xlab">자주 <i>3</i></span></div></div></div>
             <p class="mx-head">위험성 높음 13개가 대책 후 0개로</p>
             <ol class="mx-guide">
@@ -241,7 +274,6 @@ section > header p { margin-left: auto; font-size: 4.2mm; color: var(--muted); m
             </ol>
             <p class="mx-legend"><span class="sw high"></span><b>높음</b> 6~9 작업 전 대책 <span class="sw mid"></span><b>보통</b> 3~4 줄이기 <span class="sw low"></span><b>낮음</b> 1~2 유지</p>
           </div>
-          
         </div>
         <div class="check">
           <h3>AI를 그대로 믿지 않는다</h3>
@@ -268,12 +300,39 @@ section > header p { margin-left: auto; font-size: 4.2mm; color: var(--muted); m
           </div>
         </div>
       </div>
+      <div class="feats">
+        <article class="feat">
+          <h3><span>A</span>매일 작업 전 점검</h3>
+          <p>감소대책이 작업 전 체크리스트가 된다. 휴대폰으로 체크하고, 날짜별 기록과 한 달 CSV를 남긴다. 최근 10번 중 3번 이상 못 한 대책은 알려 평가표를 고치게 한다.</p>
+          <div class="frame"><img src="img/feat-daily.png" alt="작업 전 점검 화면: 자주 못 한 대책 알림과 체크리스트"></div>
+        </article>
+        <article class="feat">
+          <h3><span>B</span>비슷한 실제 사망·중상 사고</h3>
+          <p>안전보건공단 사고 사례 2,573건에서 평가표 항목과 비슷한 실제 사고를 최대 3건 보여 준다. 사고 유형(끼임·추락 등)이 다르면 짝짓지 않는다.</p>
+          <div class="frame"><img src="img/feat-sif.png" alt="비슷한 실제 사고 화면: 프레스 끼임 사망 사례"></div>
+        </article>
+        <article class="feat">
+          <h3><span>C</span>외국인 근로자용 요약</h3>
+          <p>위험성 높은 6줄을 쉬운 한국어로 정리해 7개 언어로 옮긴다. 번역문을 다시 한국어로 옮겨 비교하고, 뜻이 바뀐 줄은 &lsquo;확인 필요&rsquo;로 막는다.</p>
+          <div class="frame"><img src="img/feat-summary.png" alt="외국인 근로자용 요약 화면: 베트남어 번역과 역번역 검사"></div>
+        </article>
+        <article class="feat">
+          <h3><span>D</span>회사 계정과 체험</h3>
+          <ul class="sec">
+            <li><span><b>회사별 기록</b>: 평가표·점검 기록은 우리 회사 계정끼리만 본다</span></li>
+            <li><span><b>국세청 확인</b>: 사업자 상태·진위확인 후 사이트 관리자가 승인</span></li>
+            <li><span><b>직원 초대</b>: 이메일 인증번호로 가입, 관리자 넘기기</span></li>
+            <li><span><b>체험 계정</b>: 가입 없이 공용 체험 회사로 모든 기능을 둘러본다. 매일 처음 상태로</span></li>
+          </ul>
+        </article>
+      </div>
     </section>
 
     <section>
-      <header><span class="no">03</span><h2>검증: AI 초안은 쓸 만한가</h2><p>표준모델 작업 20종, 정답 위험요인 359개. 사람이 하나씩 판정</p></header>
+      <header><span class="no">03</span><h2>기대 효과</h2><p>표준모델 작업 20종, 정답 위험요인 359개를 사람이 하나씩 판정</p></header>
       <div class="verify">
         <div class="compare">
+          <p class="vfacts"><b>3.6배</b> AI가 검색보다 찾은 정답 위험요인 · <b>20/20</b> 코드 검사기 통과 · <b>0원</b> 검증 비용(같은 모델의 무료판, 1건 중앙값 105초)</p>
           <div class="metric">
             <h3>정답 위험요인을 찾은 비율 <span class="sub">(재현율, 사람 판정)</span></h3>
             <div class="bars">
@@ -288,60 +347,16 @@ section > header p { margin-left: auto; font-size: 4.2mm; color: var(--muted); m
               <div class="bar search"><span class="who">검색 초안</span><div class="track"><div class="fill" style="width:50%">50%</div><span class="count">68 / 137개</span></div></div>
             </div>
           </div>
+          <p class="vhow"><b>판정 기준</b> 대상과 원인까지 같아야 같은 위험, <b>확실하지 않으면 틀림</b>. 정답은 작업당 평균 18개, AI는 10~13개로 묶어 다 맞혀도 최대 약 67%. 정답 파일은 검색에서 빼서 &lsquo;처음 보는 작업&rsquo;으로 쟀다.</p>
         </div>
-        <div class="facts">
-          <dl>
-            <dt>3.6배</dt><dd>AI가 검색보다 찾은 정답 위험요인</dd>
-            <dt>20/20</dt><dd>코드 검사기 통과 (AI 초안)</dd>
-            <dt>105초</dt><dd>1건 걸린 시간 (중앙값)</dd>
-            <dt>0원</dt><dd>검증 비용 (같은 모델의 무료판, nvidia nemotron-3-ultra, OpenRouter)</dd>
-          </dl>
-          <p class="how"><b>판정 기준</b> 대상과 원인까지 같아야 같은 위험. <b>확실하지 않으면 틀림</b>, 설명에 없는 설비를 지어낸 항목도 틀림. 정답 파일은 검색에서 빼서 &lsquo;처음 보는 작업&rsquo;으로 쟀다.</p>
+        <div class="effects">
+          <div class="effect"><div class="fig">30<small>초</small></div><p><b>빈 양식 대신 초안부터</b> 작업 설명 한 단락이면 1건 16~29초에 평가표 초안</p></div>
+        <div class="effect"><div class="fig">3<small>센트</small></div><p><b>작은 공장도 부담 없이</b> 공공 데이터는 무료, AI는 평가표 1건 약 3센트</p></div>
+        <div class="effect"><div class="fig">매일</div><p><b>서류가 아니라 현장에서</b> 대책을 매일 체크하고, 못 지키는 대책은 평가표로 돌아간다</p></div>
+        <div class="effect"><div class="fig">7<small>개 언어</small></div><p><b>모두가 아는 위험</b> 외국인 근로자도 자기 말로 위험과 지킬 것을 본다</p></div>
         </div>
       </div>
     </section>
-
-    <div class="trio">
-      <section>
-        <header><span class="no">04</span><h2>현장에서 계속 쓰기</h2></header>
-        <div class="box learn">
-          <article>
-            <h3>매일 작업 전 점검</h3>
-            <p>감소대책이 작업 전 체크리스트가 되고, 기록은 날짜별·한 달 CSV로 남는다. 자주 못 하는 대책(최근 10번 중 3번 이상)은 알려 평가표를 고치게 한다.</p>
-          </article>
-          <article>
-            <h3>비슷한 실제 사망·중상 사고</h3>
-            <p>안전보건공단 사례 <span class="num">2,573건</span>에서 평가표 항목과 비슷한 사고를 최대 3건 보여 준다. 예: 그라인더 숫돌 파편, 철판 코일 낙하</p>
-          </article>
-        </div>
-      </section>
-      <section>
-        <header><span class="no">05</span><h2>외국인 근로자용 요약</h2></header>
-        <div class="box">
-          <p>위험성 높은 6줄을 코드가 쉬운 한국어로 정리하고 AI는 번역만. 번역문을 <b>다시 한국어로 옮겨</b> 원문과 비교해, 뜻이 바뀐 줄은 막는다.</p>
-          <table class="back">
-            <thead><tr><th>원문 (크메르어로 옮긴 줄)</th><th>다시 한국어로 옮긴 뜻</th></tr></thead>
-            <tbody>
-              <tr><td>튀김 등 식재료 자연발화로 화재</td><td class="bad">음식이 덜 익어 생고기처럼 화재</td></tr>
-              <tr><td>높은 곳 물건을 꺼내다 맞음</td><td class="bad">무거운 것을 높은 곳에 넣어 타박상</td></tr>
-            </tbody>
-          </table>
-          <p class="langs">시험: 베트남어 6줄 중 4줄, 크메르어 6줄 중 1줄 통과. 언어 7개(베트남·크메르·네팔·인도네시아·미얀마·우즈베크·영어)</p>
-        </div>
-      </section>
-      <section>
-        <header><span class="no">06</span><h2>회사 계정과 체험</h2></header>
-        <div class="box">
-          <ul class="sec">
-            <li><span><b>회사별 기록 분리</b>: 평가표·점검 기록은 우리 회사 계정끼리만 본다</span></li>
-            <li><span><b>국세청 확인</b>: 사업자 상태 + 진위확인(대표자 성명·개업일자)</span></li>
-            <li><span><b>관리자 승인</b>: 회사 대표 전화로 확인, 사업자번호 하나에 승인 하나</span></li>
-            <li><span><b>직원은 초대로</b>: 이메일 인증번호로 가입</span></li>
-            <li><span><b>체험 계정</b>: 가입 없이 공용 체험 회사로 회사 기능을 둘러본다. 매일 처음 상태로, 계정·직원 설정은 막는다</span></li>
-          </ul>
-        </div>
-      </section>
-    </div>
 
   </main>
 
