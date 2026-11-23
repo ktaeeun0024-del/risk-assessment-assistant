@@ -110,7 +110,10 @@ app/page.tsx              화면: 입력 → 대책 전·후 위험성 매트릭
 app/matrix.tsx            3×3 위험성 매트릭스 (칸을 누르면 그 칸 항목만 보기)
 app/account.tsx           로그인·회사 가입·초대 수락·비밀번호 찾기·직원 관리·가입 승인 화면
 app/api/assess/route.ts   평가표 만들기 (AI 또는 표준모델 검색, 실패 시 검색 초안으로 대신), AI 작업 결과 확인
-app/api/history/route.ts  우리 회사 최근 기록 20개
+app/api/history/route.ts  우리 회사 최근 기록 20개, 매일 점검에 쓸 평가표 지정
+app/api/checks/route.ts   작업 전 점검 기록 (오늘의 점검, 상세, 한 달치 CSV)
+app/api/translate/route.ts  외국인 근로자용 요약 번역·역번역 검사
+app/api/sif/route.ts      비슷한 실제 사고 검색
 app/api/auth/, company/, admin/   로그인·가입·초대, 직원 관리, 가입 승인 API
 lib/schema.ts             평가표 형식, KRAS 6분류, 3x3 위험성 등급, 법 조항 추출
 lib/validator.ts          평가표 검사기
@@ -135,7 +138,6 @@ lib/auth.ts, codes.ts, mail.ts, members.ts   비밀번호·세션, 이메일 인
 lib/business.ts           사업자등록번호 검증 숫자, 국세청 상태 조회·진위확인
 lib/history.ts            회사별 평가표 기록
 src/, scripts/            파이썬 데이터 처리 (표준모델 내려받기·정리, 검사기·검색 원본)
-src/draft.py              (실험) Claude API로 만드는 초안. 웹 앱에서는 쓰지 않음
 ```
 
 ## 위험성 판단 방법

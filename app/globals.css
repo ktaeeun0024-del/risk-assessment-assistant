@@ -62,11 +62,6 @@
   stroke-linejoin: round;
 }
 
-.brand-mark .brand-mark-ink {
-  fill: var(--signal-ink);
-  stroke: none;
-}
-
 .account {
   display: flex;
   flex-wrap: wrap;
@@ -161,12 +156,6 @@
   max-width: 60ch;
   margin: 0 0 var(--s4);
   font-size: 0.98rem;
-  color: var(--on-band-muted);
-}
-
-.band-hint {
-  margin: calc(var(--s2) * -1) 0 var(--s4);
-  font-size: 0.85rem;
   color: var(--on-band-muted);
 }
 
@@ -568,10 +557,6 @@ button.link {
   font-weight: 600;
   color: var(--text);
   font-variant-numeric: tabular-nums;
-}
-
-.below-form {
-  margin-top: var(--s3);
 }
 
 /* ---- 안내 문구 ---- */
@@ -1691,10 +1676,6 @@ h3,
   color: var(--color-ink-2);
 }
 
-.band-hint {
-  color: var(--color-ink-2);
-}
-
 .band-arrow {
   font-family: var(--font-display);
   color: var(--color-ink);
@@ -2258,10 +2239,6 @@ main.container:empty {
 .check-recent-date {
   font-family: "Oswald", var(--font-body);
   font-variant-numeric: tabular-nums;
-}
-
-.check-recent-title {
-  font-weight: 700;
 }
 
 .check-recent-who {
