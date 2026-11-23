@@ -5,6 +5,7 @@
 import { useEffect, useState } from "react";
 import type { DailyCheck, DailyCheckDetail } from "@/lib/daily-checks";
 import { DownloadIcon } from "./icons";
+import { More } from "./more";
 
 const thisMonth = () => {
   const d = new Date();
@@ -59,7 +60,8 @@ export function CheckRecords({ refreshKey }: { refreshKey: number }) {
       {checks.length === 0 && !error ? (
         <p className="placeholder">아직 저장한 점검이 없어요. 위의 오늘의 작업 전 점검이나 평가표 아래의 점검표에서 저장하면 여기에 쌓여요.</p>
       ) : (
-        <ol className="records">
+        <More total={checks.length} limit={3}>
+        <ol className="more-items records">
           {checks.map((c) => (
             <li key={c.id}>
               <div className="history-row">
@@ -96,6 +98,7 @@ export function CheckRecords({ refreshKey }: { refreshKey: number }) {
             </li>
           ))}
         </ol>
+        </More>
       )}
     </section>
   );

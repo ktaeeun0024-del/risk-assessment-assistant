@@ -293,6 +293,48 @@
   }
 }
 
+@media (max-width: 599px) {
+  /* 휴대폰: 두 매트릭스를 나란히 두면 칸이 33px까지 작아져 숫자·개수가 깨져 보인다 → 위아래로 쌓고 칸을 키운다 */
+  .band-matrices {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: stretch;
+    gap: var(--s2);
+  }
+
+  .band-matrices .band-arrow {
+    justify-self: center;
+    rotate: 90deg;
+    font-size: 1.6rem;
+    line-height: 1;
+  }
+
+  .band-matrices .matrix-title {
+    font-size: 1rem;
+  }
+
+  .band-matrices .matrix-row {
+    grid-template-columns: 4.2em repeat(3, 1fr);
+    gap: var(--space-xs);
+  }
+
+  .band-matrices .matrix-grid {
+    gap: var(--space-xs);
+  }
+
+  .band-matrices .matrix-cell {
+    min-height: 3.6rem;
+    padding: var(--space-2xs);
+  }
+
+  .band-matrices .matrix-cell .score {
+    font-size: 1.5rem;
+  }
+
+  .band-matrices .matrix-cell .count {
+    font-size: 0.8rem;
+  }
+}
+
 .band-arrow {
   font-size: 2.2rem;
   font-weight: 700;
@@ -1590,10 +1632,17 @@ h3,
   letter-spacing: 0;
 }
 
-/* 상단 바: 검정 띠 */
+/* 상단 바: 검정 띠 + 아래 끝에 공사장 안전 주의 줄무늬 (11/23, 포스터와 같은 표시) */
 .app-header {
   background: var(--color-ink);
-  border-bottom: var(--rule-bar) solid var(--color-accent);
+  border-bottom: none;
+}
+
+.app-header::after {
+  content: "";
+  display: block;
+  height: 10px;
+  background: repeating-linear-gradient(-45deg, var(--color-accent) 0 10px, var(--color-ink) 10px 20px);
 }
 
 .app-header-inner {
@@ -2942,5 +2991,33 @@ main.container:empty {
   * {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+  }
+}
+
+/* 휴대폰에서 긴 목록 접기 (11/23, app/more.tsx): 600px 미만에서만 처음 몇 개를 남기고 '더보기'로 펼친다 */
+.more .more-btn {
+  display: none;
+}
+
+@media (max-width: 599px) {
+  .more[data-open="false"][data-limit="1"] .more-items > :nth-child(n + 2),
+  .more[data-open="false"][data-limit="2"] .more-items > :nth-child(n + 3),
+  .more[data-open="false"][data-limit="3"] .more-items > :nth-child(n + 4),
+  .more[data-open="false"][data-limit="5"] .more-items > :nth-child(n + 6) {
+    display: none;
+  }
+
+  .more .more-btn {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin-top: var(--space-sm);
+  }
+}
+
+/* 인쇄는 종이 폭이 600px보다 넓어 위의 숨김이 걸리지 않는다. 버튼만 숨긴다 */
+@media print {
+  .more .more-btn {
+    display: none !important;
   }
 }

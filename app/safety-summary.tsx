@@ -12,6 +12,7 @@ import {
 } from "@/lib/safety-summary";
 import type { Assessment, RiskLevel } from "@/lib/schema";
 import { AlertIcon, CheckCircleIcon, PrinterIcon } from "./icons";
+import { More } from "./more";
 
 const LEVEL_CLASS: Record<RiskLevel, string> = { 높음: "high", 보통: "mid", 낮음: "low" };
 // 화면의 lang 속성 (글꼴·읽기 프로그램용)
@@ -151,7 +152,8 @@ export function SafetySummary({ assessment, signedIn }: { assessment: Assessment
             </button>
           )}
         </div>
-        <ol className="summary-lines">
+        <More total={source.lines.length} limit={3} unit="줄">
+        <ol className="more-items summary-lines">
           {source.lines.map((src, i) => {
             const t = shown?.lines[i];
             const c = result?.lines[i];
@@ -190,6 +192,7 @@ export function SafetySummary({ assessment, signedIn }: { assessment: Assessment
             );
           })}
         </ol>
+        </More>
         {shown && (
           <p className="summary-foot">
             AI 번역입니다. &lsquo;확인 필요&rsquo; 줄은 그 언어를 아는 동료와 함께 확인한 뒤 나눠 주세요.

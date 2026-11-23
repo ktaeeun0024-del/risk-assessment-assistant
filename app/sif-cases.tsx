@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import type { SifMatch } from "@/lib/sif";
 import type { Assessment } from "@/lib/schema";
 import { AlertIcon } from "./icons";
+import { More } from "./more";
 
 export function SifCases({ assessment }: { assessment: Assessment }) {
   const [cases, setCases] = useState<SifMatch[]>([]);
@@ -46,7 +47,8 @@ export function SifCases({ assessment }: { assessment: Assessment }) {
         이 평가표의 위험요인과 비슷한 실제 사고예요. 감소대책을 미루면 이런 일이 일어날 수 있어요. 대책 예시는 평가표를 고칠 때
         참고하세요.
       </p>
-      <ol className="sif-list">
+      <More total={cases.length} limit={1} unit="건">
+      <ol className="more-items sif-list">
         {cases.map((m, i) => (
           <li key={i}>
             <p className="sif-meta">
@@ -72,6 +74,7 @@ export function SifCases({ assessment }: { assessment: Assessment }) {
           </li>
         ))}
       </ol>
+      </More>
       <p className="sif-source">출처: {source}</p>
     </section>
   );

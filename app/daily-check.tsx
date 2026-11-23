@@ -9,6 +9,7 @@ import { buildChecklist } from "@/lib/checklist";
 import type { DailyCheck as CheckRecord, Miss } from "@/lib/daily-checks";
 import type { Assessment, RiskLevel } from "@/lib/schema";
 import { AlertIcon, CheckCircleIcon, PrinterIcon } from "./icons";
+import { More } from "./more";
 
 const LEVEL_CLASS: Record<RiskLevel, string> = { 높음: "high", 보통: "mid", 낮음: "low" };
 const time = (iso: string) => new Date(iso).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
@@ -204,7 +205,8 @@ export function DailyCheck({
       {signedIn && historyId && recent.length > 0 && (
         <div className="check-recent">
           <h3>이 평가표의 지난 점검</h3>
-          <ul>
+          <More total={Math.min(recent.length, 5)} limit={2}>
+          <ul className="more-items">
             {recent.slice(0, 5).map((c) => (
               <li key={c.id}>
                 <span className="check-recent-date">{c.checkDate}</span>
@@ -216,6 +218,7 @@ export function DailyCheck({
               </li>
             ))}
           </ul>
+          </More>
         </div>
       )}
     </section>

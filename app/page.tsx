@@ -21,6 +21,7 @@ import { DailyCheck } from "./daily-check";
 import { TodayChecks } from "./today-checks";
 import { SafetySummary } from "./safety-summary";
 import { SifCases } from "./sif-cases";
+import { More } from "./more";
 
 const LEVEL_CLASS: Record<RiskLevel, string> = { 높음: "high", 보통: "mid", 낮음: "low" };
 
@@ -438,7 +439,8 @@ export default function Home() {
             ) : history.length === 0 ? (
               <p className="placeholder">아직 만든 평가표가 없어요. 위에서 작업을 설명하고 첫 평가표를 만들어 보세요.</p>
             ) : (
-              <ol>
+              <More total={history.length} limit={3}>
+              <ol className="more-items">
                 {history.map((item) => (
                   <li key={item.id}>
                     <div className="history-row">
@@ -473,6 +475,7 @@ export default function Home() {
                   </li>
                 ))}
               </ol>
+              </More>
             )}
           </section>
         )}
@@ -613,6 +616,7 @@ function ResultView({
           </p>
         )}
 
+        <More total={rows.length} limit={3} unit="줄">
         <div className="table-wrap" id="result-table">
           <table className="doc-table">
             <thead>
@@ -625,7 +629,7 @@ function ResultView({
                 <th scope="col">개선 후</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="more-items">
               {rows.map(({ it, i }) => {
                 const src = result.sources?.[i];
                 return (
@@ -666,6 +670,7 @@ function ResultView({
             </tbody>
           </table>
         </div>
+        </More>
 
         <div className="signoff">
           <div>
@@ -719,11 +724,13 @@ function CheckView({ report, searchMode }: { report: ValidationReport; searchMod
         </ul>
       )}
       {report.warnings.length > 0 && (
-        <ul className="warnings">
+        <More total={report.warnings.length} limit={3}>
+        <ul className="more-items warnings">
           {report.warnings.map((w, i) => (
             <li key={i}>{w}</li>
           ))}
         </ul>
+        </More>
       )}
       {searchMode && report.warnings.length > 0 && <p className="hint">표준모델에 없는 조항은 국가법령정보센터에서 원문을 확인하세요.</p>}
     </div>

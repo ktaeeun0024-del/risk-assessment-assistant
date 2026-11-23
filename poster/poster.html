@@ -48,36 +48,48 @@ body { background: var(--ink); font-family: var(--body); color: var(--ink); -web
 p { margin: 0; }
 h1, h2, h3 { margin: 0; font-family: var(--display); font-weight: 800; font-synthesis: none; line-height: 1.12; letter-spacing: -0.02em; overflow-wrap: break-word; min-width: 0; }
 
-/* 머리 띠 */
-.mast { display: flex; align-items: center; justify-content: space-between; padding: 4.5mm var(--pad); color: var(--on-ink); background: var(--ink); border-bottom: 1.6mm solid var(--accent); }
+/* 머리판: 이름 띠 + 제목 + 매트릭스, 아래 끝에 안전 주의 줄무늬 */
+.top { color: var(--on-ink); background: var(--ink); }
+.mast { display: flex; align-items: center; justify-content: space-between; padding: 3mm var(--pad) 2.5mm; border-bottom: 0.4mm solid oklch(34% 0.006 270); }
 .brand { display: flex; align-items: center; gap: 4mm; }
 .brand svg { width: 9mm; height: 11mm; fill: none; stroke: var(--accent); stroke-width: 1.6; }
-.brand b { display: block; font-size: 9mm; font-weight: 800; letter-spacing: -0.02em; line-height: 1; }
+.brand b { display: block; font-size: 8mm; font-weight: 800; letter-spacing: -0.02em; line-height: 1; }
 .brand span { display: block; margin-top: 1mm; font-size: 4.2mm; color: var(--on-ink-muted); }
 .by { text-align: right; font-size: 4.6mm; color: var(--on-ink-muted); line-height: 1.4; }
-.by strong { display: block; font-size: 7mm; color: var(--on-ink); font-weight: 800; }
+.by strong { display: block; font-size: 6mm; color: var(--on-ink); font-weight: 800; }
+.hazard { position: relative; height: 5mm; background: repeating-linear-gradient(-45deg, var(--accent) 0 5mm, var(--ink) 5mm 10mm); }
 
-main { padding: 5mm var(--pad) 0; display: grid; gap: 4.5mm; align-content: start; }
+main { padding: 4.5mm var(--pad) 0; display: grid; gap: 4mm; align-content: start; }
 
-/* 첫 화면: 제목 + 한 문장 + 실제 앱 화면 */
-.hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--gap); align-items: end; }
-.hero h1 { font-size: 16mm; line-height: 1.04; }
-.hero .lead { margin-top: 0; font-size: 5.4mm; line-height: 1.45; color: var(--ink-2); font-weight: 500; }
-.hero .lead strong { color: var(--ink); font-weight: 800; }
-.motto { display: inline-block; margin-top: 4mm; padding: 2.2mm 4mm; font-size: 5.6mm; font-weight: 800; color: var(--ink); background: var(--accent); box-shadow: 0 1.2mm 0 var(--accent-deep); }
+/* 첫 화면: 큰 흰 제목 + 설명 + 3×3 위험성 매트릭스 */
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) 52mm; gap: 12mm; align-items: center; padding: 4mm var(--pad) 6mm; }
+.hero h1 { font-size: 17mm; line-height: 1.02; letter-spacing: -0.035em; color: var(--on-ink); }
+.hero .lead { margin-top: 3.5mm; max-width: 270mm; font-size: 4.7mm; line-height: 1.5; color: var(--on-ink-muted); font-weight: 500; }
+.hero .lead strong { color: var(--on-ink); font-weight: 800; }
+.motto { position: absolute; left: var(--pad); top: 50%; translate: 0 -50%; padding: 1.8mm 5mm; font-size: 5.4mm; font-weight: 800; line-height: 1.2; color: var(--ink); background: var(--accent); border: 0.9mm solid var(--ink); }
+.hero-mx { justify-self: end; }
+.hm-grid { display: grid; grid-template-columns: 6mm repeat(3, 12.5mm); grid-template-rows: repeat(3, 12.5mm) auto; gap: 1.2mm; }
+.hm-grid b { display: grid; place-items: center; font-family: "Oswald", sans-serif; font-size: 7.2mm; font-weight: 700; line-height: 1; }
+.hm-grid b.high { background: var(--high); color: var(--on-ink); }
+.hm-grid b.mid { background: var(--mid); color: var(--ink); }
+.hm-grid b.low { background: var(--low); color: var(--on-ink); }
+.hm-grid .hm-y { align-self: center; font-size: 3.4mm; color: var(--on-ink-muted); writing-mode: vertical-rl; justify-self: center; letter-spacing: 0.1em; }
+.hm-grid .hm-x { align-self: start; height: auto; text-align: center; font-size: 3.4mm; color: var(--on-ink-muted); }
+.hm-grid span:empty { display: block; }
+.hm-cap { margin-top: 1.2mm; text-align: right; font-size: 3.6mm; color: var(--on-ink); font-weight: 700; }
 .shot { margin: 0; border: 0.8mm solid var(--ink); box-shadow: var(--shadow); background: var(--plate); }
 .shot img { display: block; width: 100%; height: auto; }
 figcaption { padding: 2mm 3mm; font-size: 3.8mm; color: var(--plate-muted); background: var(--plate); border-top: 0.5mm solid var(--ink); }
 
 /* 섹션 머리: 굵은 검정 선 + 번호 + 제목 */
-section > header { display: flex; align-items: baseline; gap: 3.5mm; padding-top: 2.2mm; margin-bottom: 3mm; border-top: var(--bar) solid var(--ink); }
+section > header { display: flex; align-items: baseline; gap: 3.5mm; padding-top: 2mm; margin-bottom: 2.5mm; border-top: var(--bar) solid var(--ink); }
 section > header .no { font-family: "Oswald", sans-serif; font-size: 9mm; line-height: 1; color: var(--accent-deep); }
 section > header h2 { font-size: 9mm; }
 section > header p { margin-left: auto; font-size: 4.2mm; color: var(--muted); max-width: 110mm; text-align: right; line-height: 1.4; }
 
 /* 1 문제 */
 .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6mm; }
-.stat { padding: 3.5mm 4.5mm 3mm; background: var(--plate); border: 0.8mm solid var(--ink); }
+.stat { padding: 3mm 4.5mm 2.5mm; background: var(--plate); border: 0.8mm solid var(--ink); }
 .stat .fig { font-family: "Oswald", sans-serif; font-size: 11mm; line-height: 0.95; color: var(--ink); font-variant-numeric: tabular-nums; }
 .stat .fig small { font-size: 7mm; }
 .stat p { margin-top: 1.5mm; font-size: 4.1mm; line-height: 1.4; font-weight: 600; }
@@ -105,7 +117,7 @@ section > header p { margin-left: auto; font-size: 4.2mm; color: var(--muted); m
 
 
 /* 대책 전후 매트릭스 (사이트와 같은 색, 실제 결과 숫자) */
-.mx-plate { padding: 5mm 5.5mm; background: var(--plate); border: var(--bar) solid var(--ink); box-shadow: var(--shadow); }
+.mx-plate { padding: 4mm 5mm; background: var(--plate); border: var(--bar) solid var(--ink); box-shadow: var(--shadow); }
 .mx-row { display: grid; grid-template-columns: minmax(0, 1fr) 10mm minmax(0, 1fr); align-items: center; }
 .mx-title { font-size: 5.4mm; font-weight: 800; margin-bottom: 2mm; }
 .mx-grid { display: grid; grid-template-columns: 12mm repeat(3, minmax(0, 1fr)); gap: 1.2mm; }
@@ -138,7 +150,7 @@ section > header p { margin-left: auto; font-size: 4.2mm; color: var(--muted); m
 .bars { display: grid; gap: 2mm; margin-top: 2.5mm; }
 .bar { display: grid; grid-template-columns: 30mm minmax(0, 1fr); align-items: center; gap: 3mm; }
 .bar .who { font-size: 4.6mm; font-weight: 700; }
-.bar .track { position: relative; height: 9.5mm; background: var(--paper-2); border: 0.5mm solid var(--ink); }
+.bar .track { position: relative; height: 8.5mm; background: var(--paper-2); border: 0.5mm solid var(--ink); }
 .bar .fill { position: absolute; inset: 0 auto 0 0; display: flex; align-items: center; justify-content: flex-end; padding-right: 2.5mm; font-family: "Oswald", sans-serif; font-size: 7mm; color: var(--ink); }
 .bar.ai .fill { background: var(--accent); }
 .bar.search .fill { background: var(--search); color: var(--on-ink); }
@@ -190,7 +202,7 @@ section > header p { margin-left: auto; font-size: 4.2mm; color: var(--muted); m
 
 /* 01 문제: 현장에서 본 문제 3가지 */
 .pains { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6mm; margin-top: 3mm; }
-.pain { padding: 3mm 4mm; border-left: 1.6mm solid var(--accent); background: var(--paper-2); }
+.pain { padding: 2.5mm 4mm; border-left: 1.6mm solid var(--accent); background: var(--paper-2); }
 .pain b { display: block; font-size: 5mm; font-weight: 800; }
 .pain p { margin-top: 0.8mm; font-size: 3.7mm; line-height: 1.45; color: var(--ink-2); }
 
@@ -200,7 +212,7 @@ section > header p { margin-left: auto; font-size: 4.2mm; color: var(--muted); m
 .feat h3 { display: flex; align-items: center; gap: 2.5mm; font-family: var(--body); font-size: 5.4mm; font-weight: 800; letter-spacing: -0.02em; }
 .feat h3 span { display: grid; place-items: center; width: 7mm; height: 7mm; font-family: "Oswald", sans-serif; font-size: 4.6mm; color: var(--ink); background: var(--accent); }
 .feat > p { margin-top: 1.8mm; font-size: 3.9mm; line-height: 1.45; color: var(--ink-2); }
-.feat .frame { margin-top: 2.5mm; height: 33mm; overflow: hidden; border: 0.5mm solid var(--ink); background: var(--paper); }
+.feat .frame { margin-top: 2.5mm; height: 28mm; overflow: hidden; border: 0.5mm solid var(--ink); background: var(--paper); }
 .feat .frame img { display: block; width: 100%; height: auto; }
 .strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4mm; margin: 4mm 0 0; padding: 2.5mm 0; list-style: none; border-top: 0.5mm solid var(--ink); border-bottom: 0.5mm solid var(--ink); }
 .strip li { font-size: 3.8mm; line-height: 1.4; color: var(--ink-2); }
@@ -223,23 +235,33 @@ section > header p { margin-left: auto; font-size: 4.2mm; color: var(--muted); m
 </head>
 <body>
 <div class="sheet">
-  <header class="mast">
-    <div class="brand">
-      <svg viewBox="0 0 28 32" aria-hidden="true"><rect x="4.5" y="1.5" width="20" height="29" rx="1" /><path d="M9 1.5v29M13 9h8M13 13.5h8M13 18h5" /><path d="M1.5 7h5M1.5 13h5M1.5 19h5M1.5 25h5" /></svg>
-      <div><b>반장노트</b><span>소규모 공장 위험성평가 AI 도우미</span></div>
+  <header class="top">
+    <div class="mast">
+      <div class="brand">
+        <svg viewBox="0 0 28 32" aria-hidden="true"><rect x="4.5" y="1.5" width="20" height="29" rx="1" /><path d="M9 1.5v29M13 9h8M13 13.5h8M13 18h5" /><path d="M1.5 7h5M1.5 13h5M1.5 19h5M1.5 25h5" /></svg>
+        <div><b>반장노트</b><span>소규모 공장 위험성평가 AI 도우미</span></div>
+      </div>
+      <div class="by"><strong>김태은</strong>블루문드림천안형 AI AX 프로젝트 · 2026년 11월</div>
     </div>
-    <div class="by"><strong>김태은</strong>블루문드림천안형 AI AX 프로젝트 · 2026년 11월</div>
+    <div class="hero">
+      <div class="hero-text">
+        <h1>작업을 말로 설명하면<br>위험성평가표가 나온다</h1>
+        <p class="lead">안전 담당자가 없는 <strong>50인 미만 공장의 반장·사업주</strong>가 하는 일을 평소 말투로 적으면, <strong>유해·위험요인, 위험성, 감소대책, 관련 법 조항</strong>까지 정리한 초안이 나옵니다. 만든 평가표는 <strong>매일 작업 전 점검</strong>으로 이어지고, <strong>외국인 근로자의 말</strong>로 옮겨집니다.</p>
+      </div>
+      <div class="hero-mx" aria-hidden="true">
+        <div class="hm-grid">
+          <span class="hm-y">치명</span><b class="mid">3</b><b class="high">6</b><b class="high">9</b>
+          <span class="hm-y">휴업</span><b class="low">2</b><b class="mid">4</b><b class="high">6</b>
+          <span class="hm-y">경미</span><b class="low">1</b><b class="low">2</b><b class="mid">3</b>
+          <span></span><span class="hm-x">드묾</span><span class="hm-x">가끔</span><span class="hm-x">자주</span>
+        </div>
+        <p class="hm-cap">가능성 × 중대성 = 위험성</p>
+      </div>
+    </div>
+    <div class="hazard"><p class="motto">AI가 쓰고, 코드가 검증한다</p></div>
   </header>
 
   <main>
-    <div class="hero">
-      <h1>작업을 말로 설명하면<br>위험성평가표가 나온다</h1>
-      <div>
-        <p class="lead">안전 담당자가 없는 <strong>50인 미만 공장의 반장·사업주</strong>가 하는 일을 평소 말투로 적으면, <strong>유해·위험요인, 위험성, 감소대책, 관련 법 조항</strong>까지 정리한 초안이 나옵니다. 만든 평가표는 <strong>매일 작업 전 점검</strong>으로 이어지고, <strong>외국인 근로자의 말</strong>로 옮겨집니다.</p>
-        <p class="motto">AI가 쓰고, 코드가 검증한다</p>
-      </div>
-    </div>
-
     <section>
       <header><span class="no">01</span><h2>문제: 왜 시작했나</h2><p>작은 사업장일수록 사고는 많고, 평가를 할 사람은 없다</p></header>
       <div class="stats">
