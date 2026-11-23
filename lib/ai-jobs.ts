@@ -7,7 +7,7 @@
 //   checkTranslateJob → (번역·역번역 검사) 끝났으면 결과를 돌려준다 (기록에는 저장하지 않음)
 // AI_JOB_URL이 없으면(실습서버 개발) 이 파일을 쓰지 않고 API가 그 자리에서 AI를 기다린다.
 import { createHash, randomBytes, randomUUID } from "node:crypto";
-import type { AiDraft } from "./ai";
+import { fallbackModelNotice, type AiDraft } from "./ai";
 import type { SessionUser } from "./auth";
 import { db, dbErrorCode } from "./db";
 import { saveHistory } from "./history";
@@ -112,7 +112,7 @@ export async function checkJob(user: SessionUser, id: string): Promise<AssessPen
   const pool = await db();
   const result: AssessResponse =
     job.status === "done" && job.result
-      ? { ...(job.result as AiDraft), mode: "ai" }
+      ? { ...(job.result as AiDraft), mode: "ai", notice: fallbackModelNotice((job.result as AiDraft).model) || undefined }
       : { ...job.fallback, fallback: true, notice: `${job.error ?? "AI 초안을 만들지 못했어요."} 대신 표준모델 검색 초안을 보여 드려요.` };
 
   // 기록은 한 번만 저장한다 (화면이 여러 번 확인해도 saved를 먼저 차지한 요청만 저장)

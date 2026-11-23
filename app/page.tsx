@@ -95,6 +95,23 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 체험 계정 (11/23): 가입 없이 체험 회사의 공용 계정으로 들어간다
+  const [demoBusy, setDemoBusy] = useState(false);
+  const [demoError, setDemoError] = useState("");
+  async function enterDemo() {
+    setDemoBusy(true);
+    setDemoError("");
+    try {
+      const data = await postJson<{ user: Me }>("/api/auth/demo");
+      signedIn(data.user);
+      refreshChecks();
+    } catch (err) {
+      setDemoError(err instanceof Error ? err.message : "체험 계정에 들어가지 못했어요.");
+    } finally {
+      setDemoBusy(false);
+    }
+  }
+
   async function logout() {
     await postJson("/api/auth/logout").catch(() => undefined);
     setMe(null);
@@ -242,7 +259,7 @@ export default function Home() {
       )}
       {loading && effectiveMode === "ai" && (
         <p className="hint" aria-live="polite">
-          무료 AI 모델이라 1~2분쯤 걸려요.{waitSec > 0 && ` (${waitSec}초째 작성 중)`}
+          AI가 평가표를 쓰고 있어요. 보통 30초~1분 걸려요.{waitSec > 0 && ` (${waitSec}초째 작성 중)`}
         </p>
       )}
       {error && (
@@ -279,9 +296,11 @@ export default function Home() {
                   <span className="who-sep" aria-hidden="true" />
                   {me.name} <span className="tag">{ROLE_NAMES[me.role]}</span>
                 </span>
-                <button type="button" className="ghost small" onClick={() => setPanel(panel === "password" ? null : "password")}>
-                  비밀번호 변경
-                </button>
+                {!me.isDemo && (
+                  <button type="button" className="ghost small" onClick={() => setPanel(panel === "password" ? null : "password")}>
+                    비밀번호 변경
+                  </button>
+                )}
                 {me.role === "admin" && !me.mustChangePassword && (
                   <button type="button" className="ghost small" onClick={() => setPanel(panel === "members" ? null : "members")}>
                     직원 관리
@@ -293,11 +312,14 @@ export default function Home() {
                   </button>
                 )}
                 <button type="button" className="ghost small" onClick={logout}>
-                  로그아웃
+                  {me.isDemo ? "체험 끝내기" : "로그아웃"}
                 </button>
               </>
             ) : dbAvailable ? (
               <>
+                <button type="button" className="primary small" onClick={enterDemo} disabled={demoBusy}>
+                  {demoBusy ? "들어가는 중…" : "체험 계정으로 둘러보기"}
+                </button>
                 <button type="button" className="ghost small" onClick={() => setPanel(panel === "login" ? null : "login")}>
                   로그인
                 </button>
@@ -311,6 +333,20 @@ export default function Home() {
           </nav>
         </div>
       </header>
+
+      {demoError && !me && (
+        <div className="container demo-note" role="alert">
+          <p className="error">{demoError}</p>
+        </div>
+      )}
+      {me?.isDemo && (
+        <div className="container demo-note">
+          <p>
+            <b>체험 계정이에요.</b> 미리 넣어 둔 평가표 2개와 2주치 작업 전 점검 기록으로 회사 기능을 둘러볼 수 있어요. 다른
+            방문자와 같은 회사를 함께 쓰고, 매일 처음 상태로 돌아가요. AI 초안·번역은 하루 15번까지예요.
+          </p>
+        </div>
+      )}
 
       {panel && (
         <div className="container panels">

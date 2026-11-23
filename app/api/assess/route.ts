@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { aiDraft, DraftError } from "@/lib/ai";
+import { aiDraft, DraftError, fallbackModelNotice } from "@/lib/ai";
 import { checkJob, jobsEnabled, startJob } from "@/lib/ai-jobs";
 import { AuthError, authErrorResponse, checkSameOrigin, currentUser, type SessionUser } from "@/lib/auth";
 import { dbErrorCode } from "@/lib/db";
+import { demoAiLimitMessage, takeDemoAi } from "@/lib/demo";
 import { saveHistory } from "@/lib/history";
 import {
   DEFAULT_MODE,
@@ -70,6 +71,17 @@ export async function POST(request: Request) {
     );
   }
 
+  // 체험 계정은 AI를 하루 정해진 횟수까지만 쓴다. 넘으면 검색 초안으로 대신한다
+  let demoNotice = "";
+  if (mode === "ai" && user?.isDemo) {
+    try {
+      if (!(await takeDemoAi(user.companyId))) demoNotice = demoAiLimitMessage;
+    } catch (err) {
+      console.error(`[assess] 체험 AI 횟수 확인 실패: ${dbErrorCode(err)}`);
+      demoNotice = "지금은 AI를 쓸 수 없어요.";
+    }
+  }
+
   // 검색 초안은 두 모드 모두에서 쓴다 (AI 모드에서는 참고 자료, AI가 실패하면 대신 보여 줄 초안)
   const searched = retrieveDraft(description);
   const searchResult = (): AssessResponse => ({
@@ -83,7 +95,7 @@ export async function POST(request: Request) {
   let result: AssessResponse;
 
   // 배포 사이트: AI는 뒤에서 만들고 화면은 jobId로 결과를 확인한다
-  if (mode === "ai" && user && jobsEnabled() && process.env.OPENROUTER_API_KEY) {
+  if (mode === "ai" && user && !demoNotice && jobsEnabled() && process.env.OPENROUTER_API_KEY) {
     try {
       const pending = await startJob(user, {
         kind: "draft",
@@ -100,6 +112,8 @@ export async function POST(request: Request) {
 
   if (mode === "search") {
     result = searchResult();
+  } else if (demoNotice) {
+    result = { ...searchResult(), fallback: true, notice: `${demoNotice} 대신 표준모델 검색 초안을 보여 드려요.` };
   } else {
     const apiKey = process.env.OPENROUTER_API_KEY;
     try {
@@ -108,7 +122,7 @@ export async function POST(request: Request) {
         throw new DraftError("서버에 AI API 키가 설정되지 않았어요.", 500);
       }
       const ai = await aiDraft(apiKey, description, referenceText(searched.sources, searched.assessment));
-      result = { ...ai, mode };
+      result = { ...ai, mode, notice: fallbackModelNotice(ai.model) || undefined };
     } catch (err) {
       if (!(err instanceof DraftError)) console.error("[assess] 알 수 없는 오류");
       const reason = err instanceof DraftError ? err.message : "AI 초안을 만들지 못했어요.";

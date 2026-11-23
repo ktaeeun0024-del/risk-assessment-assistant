@@ -32,6 +32,7 @@ export type SessionUser = {
   companyName: string;
   mustChangePassword: boolean;
   isSiteAdmin: boolean;
+  isDemo: boolean; // 체험 회사 계정 (lib/demo.ts)
 };
 
 // 사이트 관리자: 회사 가입을 승인하는 사람. 쉼표로 여러 명을 적을 수 있다.
@@ -183,7 +184,7 @@ export async function endSession(): Promise<void> {
 }
 
 const USER_COLUMNS = `u.id, u.email, u.name, u.role, u.company_id AS "companyId", c.name AS "companyName",
-            u.must_change_password AS "mustChangePassword"`;
+            u.must_change_password AS "mustChangePassword", c.is_demo AS "isDemo"`;
 
 const withFlags = (row: Omit<SessionUser, "isSiteAdmin"> | undefined): SessionUser | null =>
   row ? { ...row, isSiteAdmin: isSiteAdminEmail(row.email) } : null;
@@ -224,8 +225,14 @@ export async function requireUser(opts: { allowPasswordChange?: boolean } = {}):
 
 export async function requireAdmin(): Promise<SessionUser> {
   const user = await requireUser();
+  forbidDemo(user);
   if (user.role !== "admin") throw new AuthError("회사 관리자만 할 수 있어요.", 403);
   return user;
+}
+
+// 체험 계정은 여러 방문자가 함께 쓰므로 계정·직원을 바꾸는 기능은 막는다
+export function forbidDemo(user: SessionUser): void {
+  if (user.isDemo) throw new AuthError("체험 계정에서는 할 수 없어요. 회사 가입을 하면 쓸 수 있어요.", 403, "DEMO");
 }
 
 export async function requireSiteAdmin(): Promise<SessionUser> {

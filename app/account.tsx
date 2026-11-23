@@ -13,6 +13,7 @@ export type Me = {
   companyName: string;
   mustChangePassword: boolean;
   isSiteAdmin: boolean;
+  isDemo: boolean; // 체험 계정 (11/23)
 };
 
 type Member = {

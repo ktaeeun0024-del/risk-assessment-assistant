@@ -77,13 +77,13 @@ for (const [n, c] of cases.entries()) {
         console.log(`  ${c.id}: 형식이 틀린 답을 ${f.pathname.split("/eval/")[1]}에 저장`);
       };
       try {
-        ai = await aiDraft(apiKey, c.description, reference, { onFormatError });
+        ai = await aiDraft(apiKey, c.description, reference, { onFormatError, fallback: false });
       } catch (err) {
         // 1분 한도에 걸리면 잠시 쉬고 한 번만 다시 시도
         if (err instanceof DraftError && err.status === 429) {
           console.log(`  ${c.id}: 요청이 많아 40초 쉬고 다시 시도`);
           await sleep(40_000);
-          ai = await aiDraft(apiKey, c.description, reference, { onFormatError });
+          ai = await aiDraft(apiKey, c.description, reference, { onFormatError, fallback: false });
         } else throw err;
       }
       assessment = ai.assessment;

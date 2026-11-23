@@ -6,6 +6,7 @@ import { NextResponse } from "next/server";
 import {
   AuthError,
   authErrorResponse,
+  forbidDemo,
   checkPassword,
   checkSameOrigin,
   hashPassword,
@@ -21,6 +22,7 @@ export async function POST(request: Request) {
   try {
     checkSameOrigin(request);
     const user = await requireUser({ allowPasswordChange: true });
+    forbidDemo(user);
     const body = await readJson(request);
     const current = typeof body.currentPassword === "string" ? body.currentPassword : "";
     const next = checkPassword(body.newPassword);

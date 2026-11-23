@@ -10,7 +10,8 @@
     "eval": "tsx eval/run.mts",
     "eval:review": "tsx eval/review.mts",
     "build:edge": "tsx scripts/build-edge.mts",
-    "data:sif": "tsx scripts/download-sif.mts"
+    "data:sif": "tsx scripts/download-sif.mts",
+    "data:demo": "tsx scripts/build-demo.mts"
   },
   "dependencies": {
     "next": "^16.4.6",

@@ -18,8 +18,54 @@ const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 // 기본 모델: 검증 측정(eval/README.md)에서 고른 무료 모델. 2종 시험에서 위험요인 재현율 41%로
 // 후보 3개 중 가장 높았다 (gemma-4-31b는 요청 과다로 실패, nemotron-3.5-super-vl은 19%).
 // 다른 모델을 쓰려면 OPENROUTER_MODEL에 이름을 넣는다 ("openrouter/free"는 부를 때마다 모델이 바뀜)
-export const DEFAULT_MODEL = "nvidia/nemotron-3-ultra-550b-a55b:free";
+// 11/23: 같은 모델의 유료판으로 바꿈 (팀 OpenRouter 크레딧 사용). 무료판은 멈추거나(가동률 0%) 1건에 105~171초라
+// 배포 사이트 제한(135초)을 자주 넘겨 검색 초안으로 바뀌었다. 유료판은 예시 작업 29초, 검사 한 번에 통과.
+// 같은 모델이라 검증 숫자(무료판으로 잼)는 그대로 쓴다. 유료판이 안 되면 아래 무료 대체 모델로 넘어간다.
+export const DEFAULT_MODEL = "nvidia/nemotron-3-ultra-550b-a55b";
 const MODEL = process.env.OPENROUTER_MODEL?.trim() || DEFAULT_MODEL;
+
+// 대체 모델 (11/23): 무료 기본 모델이 멈추는 때가 있다 (11/23 OpenRouter 조회: 최근 30분 가동률 0%, 호출이 5분 넘게 답 없음).
+// 그때 멈춘 모델을 2분 넘게 기다리다 검색 초안으로 넘어가지 않도록, 부르기 전에 상태를 보고 살아 있는 무료 모델로 바꾼다.
+// 대체 모델은 검증 품질이 낮아(11/15 2종 시험: super-vl 19% vs 기본 41%) 기본 모델이 멈췄을 때만 쓰고 화면에 알린다.
+export const FALLBACK_MODELS = ["nvidia/nemotron-3.5-super-vl:free", "nvidia/nemotron-3.5-lightning:free"];
+const HEALTH_TTL_MS = 60_000;
+const health = new Map<string, { ok: boolean; at: number }>();
+
+// OpenRouter의 모델 상태 (최근 30분 가동률). 조회에 실패하면 살아 있다고 본다 (조회 때문에 AI를 막지 않게)
+async function modelUp(apiKey: string, model: string): Promise<boolean> {
+  const hit = health.get(model);
+  if (hit && Date.now() - hit.at < HEALTH_TTL_MS) return hit.ok;
+  let ok = true;
+  try {
+    const res = await fetch(`https://openrouter.ai/api/v1/models/${model}/endpoints`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      signal: AbortSignal.timeout(3_000),
+    });
+    if (res.ok) {
+      const endpoints: { status?: number; uptime_last_30m?: number | null }[] = (await res.json())?.data?.endpoints ?? [];
+      ok = endpoints.some((e) => (e.status ?? 0) >= 0 && (e.uptime_last_30m == null || e.uptime_last_30m >= 50));
+    }
+  } catch {
+    ok = true;
+  }
+  health.set(model, { ok, at: Date.now() });
+  return ok;
+}
+
+// 부를 모델 고르기: 기본 모델이 살아 있으면 기본 모델, 멈췄으면 살아 있는 첫 대체 모델
+export async function pickModel(apiKey: string, preferred = MODEL): Promise<string> {
+  if (await modelUp(apiKey, preferred)) return preferred;
+  for (const m of FALLBACK_MODELS) if (m !== preferred && (await modelUp(apiKey, m))) return m;
+  return preferred;
+}
+
+const base = (m: string) => m.replace(/:free$/, "");
+// 대체 모델로 만들었으면 화면에 보여 줄 안내 (기본 모델이면 빈 문자열)
+export function fallbackModelNotice(model: string): string {
+  return model && base(model) !== base(MODEL) && FALLBACK_MODELS.some((m) => base(m) === base(model))
+    ? "기본 AI 모델이 지금 멈춰 있어 대체 무료 모델로 만들었어요. 기본 모델보다 위험요인을 덜 찾을 수 있으니 더 꼼꼼히 확인해 주세요."
+    : "";
+}
 // 배포 사이트의 서버 실행 시간 제한(Netlify 무료는 약 10초)보다 짧게 AI_TIMEOUT_MS를 주면
 // 시간 안에 AI를 포기하고 검색 초안으로 넘어간다. 기본 90초.
 const TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS) > 0 ? Number(process.env.AI_TIMEOUT_MS) : 90_000;
@@ -230,11 +276,17 @@ export type DraftOptions = {
   // 형식이 틀린 원래 답을 받아 본다 (검증 측정에서 원인을 보려고 파일로 남길 때)
   onFormatError?: (content: string) => void;
   // 모델이 생각하는 양 (없으면 DRAFT_REASONING_EFFORT 환경변수, 그것도 없으면 모델 기본값)
-  effort?: "low" | "medium" | "high";
+  // "none"은 생각을 끈다 (11/23: 대체 모델이 생각을 켜면 135초 안에 끝내지 못함)
+  effort?: "none" | "low" | "medium" | "high";
+  // false면 대체 모델로 바꾸지 않는다 (검증 측정은 정한 모델 하나로만 잰다)
+  fallback?: boolean;
 };
+// 마감이 있을 때 대체 모델 몫으로 남겨 두는 시간. 기본 모델이 이 시간을 남기고도 답이 없으면 대체 모델로 넘어간다
+// (11/23 시험: 대체 모델은 생각을 끄면 10개 작업 평균 11초, 가장 길게 17초)
+const FALLBACK_RESERVE_MS = 25_000;
 const DRAFT_EFFORT = ((): DraftOptions["effort"] => {
   const v = process.env.DRAFT_REASONING_EFFORT?.trim();
-  return v === "low" || v === "medium" || v === "high" ? v : undefined;
+  return v === "none" || v === "low" || v === "medium" || v === "high" ? v : undefined;
 })();
 
 export async function aiDraft(
@@ -255,37 +307,68 @@ export async function aiDraft(
     },
   ];
 
+  const canFallback = opts.fallback !== false;
+  let model = canFallback ? await pickModel(apiKey) : MODEL;
   let attempts = 0;
-  let lastModel = MODEL;
+  let lastModel = model;
   // 최대 3번 호출: 처음 + (형식 오류 재요청 또는 검사 오류 수정)
   let assessment: Assessment | null = null;
   let report: ValidationReport | null = null;
   let formatRetried = false;
   let repaired = false;
+  // 기본 모델이 실패했을 때 대체 모델로 바꾼다 (처음 평가표를 받기 전에만, 한 번만)
+  const switchToFallback = async (why: string): Promise<boolean> => {
+    if (!canFallback || assessment || model !== MODEL) return false;
+    for (const m of FALLBACK_MODELS) {
+      if (m !== MODEL && (await modelUp(apiKey, m))) {
+        console.error(`[assess] 기본 모델이 ${why} 대체 모델로 다시 요청합니다.`);
+        model = m;
+        return true;
+      }
+    }
+    return false;
+  };
   while (attempts < 3) {
     const left = opts.deadline ? opts.deadline - Date.now() : TIMEOUT_MS;
-    if (attempts > 0 && opts.deadline && left < MIN_RETRY_MS) {
+    const minRetry = model === MODEL ? MIN_RETRY_MS : 15_000; // 대체 모델은 빨라서 짧게 남아도 다시 부른다
+    if (attempts > 0 && opts.deadline && left < minRetry) {
       console.error("[assess] 남은 시간이 모자라 다시 요청하지 않습니다.");
       break;
     }
     attempts++;
-    const effort = opts.effort ?? DRAFT_EFFORT;
+    // 대체 모델은 생각을 끈다 (11/23 시험: 생각을 켜면 135초 초과, 끄면 7초에 검사 통과)
+    const effort = model !== MODEL ? "none" : (opts.effort ?? DRAFT_EFFORT);
+    // 마감이 있으면 기본 모델의 첫 호출은 대체 모델 몫을 남기고 끊는다
+    const reserve = opts.deadline && canFallback && model === MODEL && !assessment && left - FALLBACK_RESERVE_MS >= 30_000;
+    const wait = opts.deadline ? Math.max(left - (reserve ? FALLBACK_RESERVE_MS : 0), 1_000) : TIMEOUT_MS;
     let reply: { content: string; model: string };
     try {
       reply = await callOpenRouter(
         apiKey,
         messages,
-        opts.deadline ? Math.max(left, 1_000) : TIMEOUT_MS,
-        MODEL,
-        effort ? { effort } : undefined,
+        wait,
+        model,
+        effort === "none" ? { enabled: false } : effort ? { effort } : undefined,
       );
     } catch (err) {
       // 시간 초과는 다시 불러도 또 넘기기 쉽다. 검사 오류 수정 중이었다면 이미 받은 평가표를 그대로 쓴다
       if (err instanceof DraftError && err.status === 504 && assessment) break;
+      // 처음 호출에서 기본 모델이 너무 느리거나(남겨 둔 시간 안) 바로 거절하면(요청 과다·서버 오류) 대체 모델로 다시 부른다
+      if (err instanceof DraftError && err.status === 504 && reserve && (await switchToFallback("시간 안에 답하지 않아"))) {
+        attempts--;
+        continue;
+      }
+      if (err instanceof DraftError && [429, 502, 503].includes(err.status)) {
+        if (canFallback) health.set(MODEL, { ok: false, at: Date.now() });
+        if (await switchToFallback("응답하지 않아")) {
+          attempts--;
+          continue;
+        }
+      }
       throw err;
     }
-    const { content, model } = reply;
-    lastModel = model;
+    const { content } = reply;
+    lastModel = reply.model;
     const parsed = parseAssessment(content);
     if (!parsed) {
       opts.onFormatError?.(content);

@@ -2263,6 +2263,26 @@ main.container:empty {
   padding-bottom: 0;
 }
 
+/* 체험 계정 안내 (11/23) */
+.demo-note {
+  padding-top: var(--space-md);
+}
+
+.demo-note p {
+  margin: 0;
+  padding: var(--space-sm) var(--space-md);
+  border-left: var(--rule-bar) solid var(--color-accent);
+  background: var(--color-plate);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  color: var(--color-ink);
+}
+
+.demo-note p.error {
+  border-left-color: var(--error);
+  color: var(--error);
+}
+
 .today {
   padding: var(--space-lg) var(--s6);
   color: var(--paper-ink);
@@ -2815,6 +2835,7 @@ main.container:empty {
   .doc-actions,
   .filter-bar,
   .sif,
+  .demo-note,
   .history {
     display: none !important;
   }

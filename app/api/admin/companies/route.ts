@@ -37,8 +37,8 @@ async function listCompanies() {
        FROM companies c
        LEFT JOIN LATERAL (SELECT name, email FROM users WHERE company_id = c.id AND role = 'admin'
                            ORDER BY created_at LIMIT 1) a ON true
-      WHERE c.status = 'pending' OR c.id IN (
-              SELECT id FROM companies WHERE status <> 'pending' ORDER BY coalesce(reviewed_at, created_at) DESC LIMIT 20)
+      WHERE NOT c.is_demo AND (c.status = 'pending' OR c.id IN (
+              SELECT id FROM companies WHERE status <> 'pending' AND NOT is_demo ORDER BY coalesce(reviewed_at, created_at) DESC LIMIT 20))
       ORDER BY (c.status = 'pending') DESC, c.created_at DESC`,
   );
   return {

@@ -2,7 +2,7 @@
 //
 // 테이블: companies(회사, 사이트 관리자 승인 필요) / users(계정, 회사 하나에 속함) / sessions(로그인 상태)
 //        / assessment_history(평가표 기록) / email_codes(이메일 인증번호) / ai_jobs(배포 사이트의 AI 초안 작업)
-//        / daily_checks(작업 전 점검 기록)
+//        / daily_checks(작업 전 점검 기록). companies.is_demo는 체험 회사 (lib/demo.ts)
 // 회사별 분리: 평가표 기록은 반드시 로그인한 계정의 company_id로만 저장·조회한다. company_id는 화면에서 받지 않는다.
 // Supabase에서는 모든 테이블에 RLS를 켜 두고 정책을 만들지 않는다. 그러면 Supabase의 공개 REST API(anon 키)로는
 // 아무 행도 읽을 수 없고, 이 앱(테이블 소유자 계정으로 접속)만 읽고 쓸 수 있다.
@@ -142,6 +142,13 @@ const SCHEMA = `
   -- 작업 종류: draft(평가표 초안) / translate(외국인 근로자용 번역, payload에 언어와 쉬운 한국어 요약)
   ALTER TABLE ai_jobs ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'draft';
   ALTER TABLE ai_jobs ADD COLUMN IF NOT EXISTS payload jsonb;
+
+  -- 체험 계정 (11/23): 포스터 QR로 들어온 사람이 로그인 없이 회사 기능을 둘러보는 체험 회사 (lib/demo.ts).
+  -- demo_day: 마지막으로 처음 상태로 되돌린 날. demo_ai_*: 체험 회사의 하루 AI 사용 횟수
+  ALTER TABLE companies ADD COLUMN IF NOT EXISTS is_demo boolean NOT NULL DEFAULT false;
+  ALTER TABLE companies ADD COLUMN IF NOT EXISTS demo_day date;
+  ALTER TABLE companies ADD COLUMN IF NOT EXISTS demo_ai_day date;
+  ALTER TABLE companies ADD COLUMN IF NOT EXISTS demo_ai_count integer NOT NULL DEFAULT 0;
 
   ALTER TABLE ai_jobs ENABLE ROW LEVEL SECURITY;
   ALTER TABLE email_codes ENABLE ROW LEVEL SECURITY;
