@@ -133,7 +133,7 @@ section > header p { margin-left: auto; font-size: 4.2mm; color: var(--muted); m
 .mx-arrow { text-align: center; font-family: "Oswald", sans-serif; font-size: 9mm; }
 .mx-head { margin-top: 2.5mm; font-family: var(--display); font-weight: 800; font-size: 6.4mm; letter-spacing: -0.02em; }
 .ylab i, .xlab i { font-style: normal; font-family: "Oswald", sans-serif; color: var(--ink); }
-.mx-guide { margin: 1.5mm 0 0; padding-left: 4.5mm; display: grid; gap: 0.8mm; font-size: 3.8mm; line-height: 1.4; color: var(--ink-2); }
+.mx-guide { margin: 1.5mm 0 0; padding-left: 0; list-style: none; display: grid; gap: 0.8mm; font-size: 3.8mm; line-height: 1.4; color: var(--ink-2); }
 .mx-guide b { color: var(--ink); font-weight: 800; }
 .mx-legend { margin-top: 2mm; display: flex; align-items: center; flex-wrap: wrap; gap: 1.5mm; font-size: 3.7mm; color: var(--ink-2); }
 .mx-legend .sw { width: 3.6mm; height: 3.6mm; margin-left: 2mm; }
@@ -150,7 +150,7 @@ section > header p { margin-left: auto; font-size: 4.2mm; color: var(--muted); m
 .bars { display: grid; gap: 2mm; margin-top: 2.5mm; }
 .bar { display: grid; grid-template-columns: 30mm minmax(0, 1fr); align-items: center; gap: 3mm; }
 .bar .who { font-size: 4.6mm; font-weight: 700; }
-.bar .track { position: relative; height: 8.5mm; background: var(--paper-2); border: 0.5mm solid var(--ink); }
+.bar .track { position: relative; height: 7.5mm; background: var(--paper-2); border: 0.5mm solid var(--ink); }
 .bar .fill { position: absolute; inset: 0 auto 0 0; display: flex; align-items: center; justify-content: flex-end; padding-right: 2.5mm; font-family: "Oswald", sans-serif; font-size: 7mm; color: var(--ink); }
 .bar.ai .fill { background: var(--accent); }
 .bar.search .fill { background: var(--search); color: var(--on-ink); }
@@ -186,7 +186,7 @@ section > header p { margin-left: auto; font-size: 4.2mm; color: var(--muted); m
 .learn .num { font-family: "Oswald", sans-serif; font-weight: 700; color: var(--ink); }
 
 /* 바닥 띠: 데이터 · 기술 · 한계 · QR · 출처 */
-.foot { margin-top: 3mm; padding: 4.5mm var(--pad) 3mm; color: var(--on-ink); background: var(--ink); border-top: 1.6mm solid var(--accent); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1fr) 56mm; gap: 7mm; }
+.foot { margin-top: 3mm; padding: 4.5mm var(--pad) 2.4mm; color: var(--on-ink); background: var(--ink); border-top: 1.6mm solid var(--accent); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1fr) 56mm; gap: 7mm; }
 .foot h3 { font-size: 5.6mm; color: var(--on-ink); }
 .foot p, .foot li { font-size: 3.5mm; line-height: 1.5; color: var(--on-ink-muted); }
 .foot ul { margin: 1.8mm 0 0; padding-left: 4.5mm; }
@@ -212,7 +212,7 @@ section > header p { margin-left: auto; font-size: 4.2mm; color: var(--muted); m
 .feat h3 { display: flex; align-items: center; gap: 2.5mm; font-family: var(--body); font-size: 5.4mm; font-weight: 800; letter-spacing: -0.02em; }
 .feat h3 span { display: grid; place-items: center; width: 7mm; height: 7mm; font-family: "Oswald", sans-serif; font-size: 4.6mm; color: var(--ink); background: var(--accent); }
 .feat > p { margin-top: 1.8mm; font-size: 3.9mm; line-height: 1.45; color: var(--ink-2); }
-.feat .frame { margin-top: 2.5mm; height: 28mm; overflow: hidden; border: 0.5mm solid var(--ink); background: var(--paper); }
+.feat .frame { margin-top: 2.5mm; height: 23mm; overflow: hidden; border: 0.5mm solid var(--ink); background: var(--paper); }
 .feat .frame img { display: block; width: 100%; height: auto; }
 .strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4mm; margin: 4mm 0 0; padding: 2.5mm 0; list-style: none; border-top: 0.5mm solid var(--ink); border-bottom: 0.5mm solid var(--ink); }
 .strip li { font-size: 3.8mm; line-height: 1.4; color: var(--ink-2); }
@@ -231,6 +231,30 @@ section > header p { margin-left: auto; font-size: 4.2mm; color: var(--muted); m
 .vfacts b { font-family: "Oswald", sans-serif; font-size: 6mm; color: var(--ink); }
 .vhow { font-size: 3.7mm; line-height: 1.5; color: var(--muted); }
 .vhow b { color: var(--ink); }
+
+/* 03 기대 효과: 확인한 단계 → 기대 */
+.chain { list-style: none; margin: 0 0 3.5mm; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(0, 1.05fr); gap: 0; border: 0.8mm solid var(--ink); background: var(--plate); }
+.chain li { position: relative; padding: 2.5mm 4mm 2.8mm; border-left: 0.5mm solid var(--plate-rule); }
+.chain li:first-child { border-left: none; }
+.chain li:not(.goal)::after { content: ""; position: absolute; right: -2.6mm; top: 50%; translate: 0 -50%; z-index: 1; width: 4.6mm; height: 4.6mm; background: var(--plate); border-top: 0.8mm solid var(--ink); border-right: 0.8mm solid var(--ink); rotate: 45deg; }
+.chain b { display: block; margin-top: 1.2mm; font-size: 4.6mm; font-weight: 800; letter-spacing: -0.02em; }
+.chain p { margin-top: 1mm; font-size: 3.7mm; line-height: 1.42; color: var(--ink-2); }
+.chain .goal { background: var(--ink); color: var(--on-ink); }
+.chain .goal b { color: var(--accent); font-size: 5.4mm; }
+.chain .goal p { color: var(--on-ink-muted); }
+.badge { display: inline-block; padding: 0.6mm 2mm; font-size: 3.2mm; font-weight: 800; line-height: 1.3; }
+.badge.got { background: var(--ink); color: var(--on-ink); }
+.badge.has { border: 0.5mm solid var(--ink); color: var(--ink); }
+.badge.exp { background: var(--accent); color: var(--ink); }
+.evidence { padding: 4mm 5mm; background: var(--ink); color: var(--on-ink); }
+.evidence h3 { font-family: var(--body); font-size: 5.2mm; font-weight: 800; color: var(--on-ink); }
+.ev { margin-top: 2.5mm; padding-top: 2.5mm; border-top: 0.4mm solid oklch(36% 0.006 270); }
+.ev-fig { font-family: "Oswald", sans-serif; font-size: 8mm; line-height: 1; color: var(--accent); }
+.ev-fig small { font-size: 5mm; }
+.ev-fig span { font-size: 4.5mm; color: var(--on-ink-muted); margin: 0 1mm; }
+.ev p { margin-top: 1.5mm; font-size: 3.7mm; line-height: 1.45; color: var(--on-ink-muted); }
+.ev p b { color: var(--on-ink); font-weight: 800; }
+.ev .src { margin-top: 1mm; font-size: 3.1mm; color: oklch(70% 0.008 80); }
 </style>
 </head>
 <body>
@@ -271,9 +295,9 @@ section > header p { margin-left: auto; font-size: 4.2mm; color: var(--muted); m
         <div class="stat"><div class="fig">102<small>명</small></div><p>2024년 외국인 근로자 산재 사망 (2022년 85명)</p><p class="src">고용노동부 자료 (MTN, 2026-09-17)</p></div>
       </div>
       <div class="pains">
-        <div class="pain"><b>평가할 사람이 없다</b><p>안전 담당자가 없어 위험성평가를 미루거나 양식만 채운다. 법은 모든 사업장에 평가를 요구한다.</p></div>
-        <div class="pain"><b>한 번 쓰고 끝난다</b><p>평가표를 만들어도 감소대책을 매일 지키는지 확인할 방법이 없다. 사고는 매일의 작업에서 난다.</p></div>
-        <div class="pain"><b>근로자가 읽지 못한다</b><p>외국인 근로자는 한국어 평가표를 읽기 어렵다. 위험을 알아야 대책을 지킨다.</p></div>
+        <div class="pain"><b>평가할 사람이 없다</b><p>안전 담당자가 없어 평가를 미루거나 양식만 채운다</p></div>
+        <div class="pain"><b>한 번 쓰고 끝난다</b><p>대책을 매일 지키는지 확인할 방법이 없다</p></div>
+        <div class="pain"><b>근로자가 읽지 못한다</b><p>외국인 근로자는 한국어 평가표를 읽기 어렵다</p></div>
       </div>
     </section>
 
@@ -291,8 +315,7 @@ section > header p { margin-left: auto; font-size: 4.2mm; color: var(--muted); m
             <div class="mx-row"><div class="mx"><p class="mx-title">지금</p><div class="mx-grid"><span class="ylab">치명 <i>3</i></span><div class="cell mid none"><b>3</b><span>–</span></div><div class="cell high"><b>6</b><span>6개</span></div><div class="cell high"><b>9</b><span>4개</span></div><span class="ylab">휴업 <i>2</i></span><div class="cell low none"><b>2</b><span>–</span></div><div class="cell mid"><b>4</b><span>5개</span></div><div class="cell high"><b>6</b><span>3개</span></div><span class="ylab">경미 <i>1</i></span><div class="cell low none"><b>1</b><span>–</span></div><div class="cell low none"><b>2</b><span>–</span></div><div class="cell mid none"><b>3</b><span>–</span></div><span></span><span class="xlab">드묾 <i>1</i></span><span class="xlab">가끔 <i>2</i></span><span class="xlab">자주 <i>3</i></span></div></div><span class="mx-arrow" aria-hidden="true">→</span><div class="mx"><p class="mx-title">대책을 하면</p><div class="mx-grid"><span class="ylab">치명 <i>3</i></span><div class="cell mid"><b>3</b><span>10개</span></div><div class="cell high none"><b>6</b><span>–</span></div><div class="cell high none"><b>9</b><span>–</span></div><span class="ylab">휴업 <i>2</i></span><div class="cell low"><b>2</b><span>8개</span></div><div class="cell mid none"><b>4</b><span>–</span></div><div class="cell high none"><b>6</b><span>–</span></div><span class="ylab">경미 <i>1</i></span><div class="cell low none"><b>1</b><span>–</span></div><div class="cell low none"><b>2</b><span>–</span></div><div class="cell mid none"><b>3</b><span>–</span></div><span></span><span class="xlab">드묾 <i>1</i></span><span class="xlab">가끔 <i>2</i></span><span class="xlab">자주 <i>3</i></span></div></div></div>
             <p class="mx-head">위험성 높음 13개가 대책 후 0개로</p>
             <ol class="mx-guide">
-              <li><b>가능성</b>(가로): 얼마나 자주 일어나나 · <b>중대성</b>(세로): 일어나면 얼마나 크게 다치나</li>
-              <li>큰 숫자 = 가능성 × 중대성 = 위험성 점수, 아래 = 그 칸의 위험요인 수 (금속 부품 공장, 검색 초안 예시 18개). 대책을 하면 항목이 아래·왼쪽(초록)으로 옮겨 간다</li>
+              <li><b>가능성</b>(가로) × <b>중대성</b>(세로) = 위험성 점수. 칸 아래 숫자는 그 칸의 위험요인 수 (금속 부품 공장, 검색 초안 예시 18개)</li>
             </ol>
             <p class="mx-legend"><span class="sw high"></span><b>높음</b> 6~9 작업 전 대책 <span class="sw mid"></span><b>보통</b> 3~4 줄이기 <span class="sw low"></span><b>낮음</b> 1~2 유지</p>
           </div>
@@ -351,10 +374,16 @@ section > header p { margin-left: auto; font-size: 4.2mm; color: var(--muted); m
     </section>
 
     <section>
-      <header><span class="no">03</span><h2>기대 효과</h2><p>표준모델 작업 20종, 정답 위험요인 359개를 사람이 하나씩 판정</p></header>
+      <header><span class="no">03</span><h2>기대 효과: 평가가 매일 지켜지는 공장</h2><p>사고 감소는 아직 재지 못했다. 어디까지 확인했는지 나눠 적는다</p></header>
+      <ol class="chain">
+        <li><span class="badge got">측정함</span><b>평가를 시작한다</b><p>작업 설명 한 단락이면 16~29초, 약 3센트에 초안</p></li>
+        <li><span class="badge got">측정함</span><b>위험을 제대로 찾는다</b><p>검색보다 정답 위험요인 3.6배, 쓴 항목 90%가 실제 위험</p></li>
+        <li><span class="badge has">기능 있음</span><b>대책이 매일 지켜진다</b><p>대책이 작업 전 체크리스트가 되고, 못 지키는 대책은 알린다</p></li>
+        <li><span class="badge has">기능 있음</span><b>모두가 위험을 안다</b><p>외국인 근로자도 7개 언어로 위험과 지킬 것을 본다</p></li>
+        <li class="goal"><span class="badge exp">기대</span><b>사고가 준다</b><p>다음 단계: 공장 몇 곳에서 3개월 써 보며 점검 이행률·아차사고 비교</p></li>
+      </ol>
       <div class="verify">
         <div class="compare">
-          <p class="vfacts"><b>3.6배</b> AI가 검색보다 찾은 정답 위험요인 · <b>20/20</b> 코드 검사기 통과 · <b>0원</b> 검증 비용(같은 모델의 무료판, 1건 중앙값 105초)</p>
           <div class="metric">
             <h3>정답 위험요인을 찾은 비율 <span class="sub">(재현율, 사람 판정)</span></h3>
             <div class="bars">
@@ -369,14 +398,21 @@ section > header p { margin-left: auto; font-size: 4.2mm; color: var(--muted); m
               <div class="bar search"><span class="who">검색 초안</span><div class="track"><div class="fill" style="width:50%">50%</div><span class="count">68 / 137개</span></div></div>
             </div>
           </div>
-          <p class="vhow"><b>판정 기준</b> 대상과 원인까지 같아야 같은 위험, <b>확실하지 않으면 틀림</b>. 정답은 작업당 평균 18개, AI는 10~13개로 묶어 다 맞혀도 최대 약 67%. 정답 파일은 검색에서 빼서 &lsquo;처음 보는 작업&rsquo;으로 쟀다.</p>
+          <p class="vhow"><b>판정 기준</b> 대상과 원인까지 같아야 같은 위험, <b>확실하지 않으면 틀림</b>. 정답은 작업당 18개, AI는 10~13개라 다 맞혀도 최대 약 67%.</p>
         </div>
-        <div class="effects">
-          <div class="effect"><div class="fig">30<small>초</small></div><p><b>빈 양식 대신 초안부터</b> 작업 설명 한 단락이면 1건 16~29초에 평가표 초안</p></div>
-        <div class="effect"><div class="fig">3<small>센트</small></div><p><b>작은 공장도 부담 없이</b> 공공 데이터는 무료, AI는 평가표 1건 약 3센트</p></div>
-        <div class="effect"><div class="fig">매일</div><p><b>서류가 아니라 현장에서</b> 대책을 매일 체크하고, 못 지키는 대책은 평가표로 돌아간다</p></div>
-        <div class="effect"><div class="fig">7<small>개 언어</small></div><p><b>모두가 아는 위험</b> 외국인 근로자도 자기 말로 위험과 지킬 것을 본다</p></div>
-        </div>
+        <aside class="evidence">
+          <h3>왜 &lsquo;매일 지키기&rsquo;인가</h3>
+          <div class="ev">
+            <div class="ev-fig">−66.7<small>%</small></div>
+            <p><b>도움을 받은 사업장의 사고사망자</b> 위험성평가·관리체계 컨설팅을 받은 30,837곳, 168명 → 56명 (2022 → 2024, 단순 전후 비교)</p>
+            <p class="src">고용노동부 보도자료, 2025-05-22</p>
+          </div>
+          <div class="ev">
+            <div class="ev-fig">0.45<small>%</small> <span>vs</span> 0.47<small>%</small></div>
+            <p><b>평가를 &lsquo;인정&rsquo;받은 사업장의 사고재해율</b> 100인 미만 전체와 거의 같다 (2025). 평가표만으로는 사고가 줄지 않는다</p>
+            <p class="src">이철규 의원실 분석(공단·노동부 자료), 한국경제 2026-09-23</p>
+          </div>
+        </aside>
       </div>
     </section>
 
@@ -408,7 +444,7 @@ section > header p { margin-left: auto; font-size: 4.2mm; color: var(--muted); m
       <span class="demo">로그인 없이 회사 기능까지:<br>첫 화면 ‘체험 계정으로 둘러보기’</span>
       <span>sage-centaur-becf16.netlify.app</span>
     </div>
-    <p class="sources">출처: 뉴시스 2025-08-01 · 이투데이 2023-03-21(한국경영자총협회 조사) · 뉴시스 2023-12-18(중소기업중앙회 조사) · MTN 2026-09-17(고용노동부 자료) · 공공데이터포털 한국가스공사 위험성평가 표준모델 · 안전보건공단 SIF 아카이브 · 고용노동부 고시 제2023-19호</p>
+    <p class="sources">출처: 뉴시스 2025-08-01 · 이투데이 2023-03-21(경총 조사) · 뉴시스 2023-12-18(중기중앙회 조사) · MTN 2026-09-17(고용노동부 자료) · 고용노동부 보도자료 2025-05-22 · 한국경제 2026-09-23 · 공공데이터포털(가스공사 표준모델, 공단 SIF) · 고용노동부 고시 제2023-19호</p>
   </footer>
 </div>
 </body>
