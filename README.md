@@ -92,7 +92,7 @@ npm run build && npm start
 1. Supabase에서 새 프로젝트를 만들고(지역: Northeast Asia (Seoul)) DB 비밀번호를 정해 둡니다.
 2. 프로젝트의 **Connect** → **Transaction pooler** 주소(포트 6543)를 복사하고 `[YOUR-PASSWORD]`를 DB 비밀번호로 바꿉니다. Netlify 서버는 IPv4만 쓰므로 Direct connection 주소 대신 pooler 주소를 씁니다.
 3. Netlify → Site configuration → Environment variables에 `DATABASE_URL`(위 주소), `OPENROUTER_API_KEY`, `AI_JOB_URL`, `SITE_ADMIN_EMAILS`, `SMTP_USER`, `SMTP_PASS`, (선택) `NTS_SERVICE_KEY`를 넣고 다시 배포합니다. 테이블은 첫 요청 때 자동으로 만들어집니다.
-3-1. **AI 초안 (Supabase Edge Function)**: Netlify 무료 서버 함수는 약 10초 안에 끝나야 하는데 무료 AI는 1~2분 걸립니다. 그래서 AI는 Supabase Edge Function(무료 최대 150초)이 뒤에서 만듭니다.
+3-1. **AI 초안 (Supabase Edge Function)**: Netlify 무료 서버 함수는 약 10초 안에 끝나야 하는데 AI는 유료 모델로 16~29초, 무료 모델로는 1~2분 걸립니다. 그래서 AI는 Supabase Edge Function(무료 최대 150초)이 뒤에서 만듭니다.
    `npm run build:edge`로 `supabase/functions/ai-draft/index.js`(lib/ai.ts까지 묶은 파일)를 만들어 함수 이름 `ai-draft`, JWT 검증 끔으로 배포합니다(작업마다 일회용 토큰으로 확인). OpenRouter 키는 Netlify가 요청 머리글로 함께 보내며, Supabase Secrets에 `OPENROUTER_API_KEY`를 넣으면 그것을 먼저 씁니다.
 3-2. Netlify 무료 요금제는 크레딧제(한 달 300, 실제 배포 1번에 15)이고 다 쓰면 사이트가 멈춥니다. 작업은 `dev` 브랜치에 올리고 main에는 모아서 올립니다.
 4. Netlify Build settings: Build command `npm run build`, Publish directory `.next`
@@ -154,6 +154,6 @@ src/, scripts/            파이썬 데이터 처리 (표준모델 내려받기�
 ## 한계
 - 초안 도구입니다. 법률 자문이 아니며, 위험성평가의 최종 판단과 책임은 사업주에게 있습니다.
 - 표준모델이 가스공사 작업(지게차·크레인·배관·설비 점검 등) 위주라 프레스·사출 같은 일반 제조 공정은 적습니다.
-- 무료 AI는 1건에 1~2분 걸리고 하루 50번까지만 부를 수 있습니다. 가끔 형식이 틀린 답을 줘 다시 부르면 2분을 넘기는데, 배포 사이트에서는 135초가 지나면 검색 초안으로 대체됩니다.
-- AI도 가끔 작업 설명에 없는 설비를 지어냅니다(검증에서 초안 119개 중 틀린 항목 7개). 사람이 꼭 확인해야 합니다.
-- 검증 결과(중간, 10종): 같은 기준으로 사람이 판정하면 표준모델 위험요인을 AI는 33%, 검색 초안은 8% 찾았고, 쓸 만한 항목 비율은 89% 대 44%였습니다. 자세한 내용은 [eval/README.md](eval/README.md).
+- AI는 유료 모델(팀 OpenRouter 크레딧, 1건 약 3센트)이라 크레딧이 떨어지면 무료 모델로 넘어갑니다. 무료 모델은 느리고(같은 모델 무료판 1~2분) 덜 찾으며(대체 모델 자동 채점 재현율 19%), 그래도 안 되면 135초 안에 검색 초안으로 대체됩니다.
+- AI도 가끔 틀린 항목을 씁니다(검증 20종에서 AI가 쓴 242개 중 틀린 항목 16개). 사람이 꼭 확인해야 합니다.
+- 검증 결과(20종, 사람 판정): 표준모델 위험요인을 AI는 32.0%(359개 중 115), 검색 초안은 8.9% 찾았고, 쓸 만한 항목 비율은 90% 대 50%였습니다. 정답은 작업당 평균 18개인데 AI는 10~13개를 써서 다 맞혀도 최대 약 67%입니다. 사고 감소 효과는 아직 재지 않았습니다. 자세한 내용은 [eval/README.md](eval/README.md).
